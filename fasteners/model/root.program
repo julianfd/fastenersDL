@@ -1,0 +1,8 @@
+program root {
+//rule importCsv
+	rule geometry.createHexHeadBoltWithFlange
+	rule geometry.createCylinderHeadBolt
+	rule geometry.createHexHeadBolt
+
+	rule test
+}

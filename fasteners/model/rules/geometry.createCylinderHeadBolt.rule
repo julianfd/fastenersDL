@@ -1,0 +1,79 @@
+import data.ISO4762
+import topology.Bolt
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createCylinderHeadBolt(d:String = "M6", l:String = "L22", standard:String = "ISO4762")
+do {
+	/*
+	 * - ISO 4762 heaxagon socket head cap screw
+	 * - ISO 14579 hexalobular socket head cap screw
+	 * - DIN 7984 hexagon socket low head cap screw
+	 * - DIN 6912 hexagon socket low head cap screw with drilled recess
+	 * - ASMEB18.3.1A hexagon socket head cap screw
+	 * - ASMEB18.3.1G hexagon socket low head cap screw
+	 */
+	G+[
+		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+	// HEAD
+	var parameters = list
+	var partID = ""
+	switch (standard) {
+		case "ISO4762": {
+			G+[(bolt)-[:standard]->(iSO4762:ISO4762)]
+			parameters = iSO4762.parameters.get(d)
+			partID = "ISO4762"
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented.")
+	}
+
+	val dia = rule fasteners.rules.geometry.GeometryUtil.op.getDia(d)
+	val length = rule fasteners.rules.geometry.GeometryUtil.op.getLength(l)
+
+// "Dia","P"0, "b"1 ,"dk_max"2 ,"da"3 ,"ds_min"4 ,"e"5 ,"lf"6 ,"k"7 ,"r"8 ,"s_mean"9 ,"t"10 ,"v"11 ,"dw"12 ,"w"13
+	val P = parameters.get(0) // thread pitch
+	val b = parameters.get(1) // standard threaded length
+	val dk_max = parameters.get(2) // max head diameter
+	val da = parameters.get(3) // bearing-face diameter under head
+	val ds_min = parameters.get(4) // minimum shank/body diameter
+	val e = parameters.get(5) // drive width across corners
+	val k = parameters.get(7) // head height
+	val r = parameters.get(8) // head-to-shank fillet radius
+	val s_mean = parameters.get(9) // mean drive width across flats
+	val t = parameters.get(10) // drive depth (t1 in DIN 6912 table)
+//	val t2 = parameters.get(10) // additional drilled recess depth (DIN 6912 only)
+	val v = parameters.get(11) // head-edge chamfer height/radius
+	val dw = parameters.get(12) // diameter where the top chamfer meets the head
+	val w = parameters.get(13)
+	var headGeo = workplane("XZ").sketch [ moveTo(0, 0).lineTo(0, k).lineTo((dk_max/2)-v, k).tangentArc(v, -90).lineTo(dk_max/2, (dk_max -dw)/2)
+		.lineTo(dw/2, 0).close].revolve[axis = Z]
+
+	print(s_mean + " " + t)
+	val recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(s_mean, t, true).translate(
+		#[0, 0, k - t])
+	headGeo = headGeo.cut(recess)
+
+	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
+
+	// in case of partially threaded fastener
+	if (length - r > b) {
+	}
+	val shaftGeo = workplane("XZ").sketch [
+		lineTo(dia / 2.0 + r, 0.0).polarArc(180, r, 90)
+		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
+		.lineTo(0, -length).close
+	].revolve[axis = Z]
+
+	boltShaft.part = part(partDefinition(partID + "_" + l + "_shaft", shaftGeo))
+
+	val boltGeo = headGeo.union(shaftGeo)
+	bolt.part = part(partDefinition(partID + "_" + d + "_" + l, boltGeo))
+}

@@ -1,0 +1,147 @@
+import topology.BoltHead
+import topology.Bolt
+import topology.BoltShaft
+import standards.hexheadboltwithflange.EN1662
+import standards.hexheadboltwithflange.EN1665
+import standards.hexheadboltwithflange.ISO4162
+import standards.hexheadboltwithflange.ISO15071
+import standards.hexheadboltwithflange.ISO15072
+import standards.hexheadboltwithflange.ASMEB18218
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createHexHeadBoltWithFlange(d:String = "M3", l:String = "L10", standard:String = "ISO4162") // make enum
+// Translated from FsFunctions/FSmakeHexHeadWithFlange.py
+// Supported: ISO 4162, ISO 15071, ISO 15072, EN 1662, EN 1665, ASMEB18.2.1.8
+// Builds a flanged hex head by revolving the profile generated below and
+// intersecting it with a hex prism, then fuses it with the shaft+flange of the bolt.
+do {
+	G+[
+		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+	// DEBUG
+	G+[(bolt)-[:standard]->(iSO4162:ISO4162)]
+	val parameters = iSO4162.parameters.get(d)
+	val partID = "ISO4162"
+	print(parameters)
+
+//	var parameters = list
+//	var partID = ""
+//	switch (standard) {
+//		case "EN1662": {
+//			G+[(bolt)-[:standard]->(en1662:EN1662)]
+//			parameters = en1662.parameters.get(d)
+//			partID = "EN1662"
+//		}
+//		case "EN1665": {
+//			G+[(bolt)-[:standard]->(en1665:EN1665)]
+//			parameters = en1665.parameters.get(d)
+//			partID = "EN1665"
+//		}
+//		case "ISO4162": {
+//			G+[(bolt)-[:standard]->(iSO4162:ISO4162)]
+//			parameters = iSO4162.parameters.get(d)
+//			partID = "ISO4162"
+//		}
+//		case "ISO15071": {
+//			G+[(bolt)-[:standard]->(iSO15071:ISO15071)]
+//			parameters = iSO15071.parameters.get(d)
+//			partID = "ISO15071"
+//		}
+//		case "ISO15072": {
+//			G+[(bolt)-[:standard]->(iSO15072:ISO15072)]
+//			parameters = iSO15072.parameters.get(d)
+//			partID = "ISO15072"
+//		}
+//		case "ASMEB18.2.1.8": {
+//			G+[(bolt)-[:standard]->(asmeB18218:ASMEB18218)]
+//			parameters = asmeB18218.parameters.get(d)
+//			partID = "ASMEB18_2_1_8"
+//		}
+//		default:
+//			throw new IllegalArgumentException("standard not implemented.")
+//	}
+	print(standard)
+
+	val dia = rule fasteners.rules.geometry.GeometryUtil.op.getDia(d)
+	val length = rule fasteners.rules.geometry.GeometryUtil.op.getLength(l)
+
+	val sqrt2 = sqrt(2.0)
+	val sqrt3 = sqrt(3.0)
+	val beta = Math.toRadians(25.0)
+	val tanBeta = tan(beta)
+
+	val P = parameters.get(0)
+	val b0 = parameters.get(1)
+	val b1 = parameters.get(2)
+	val b2 = parameters.get(3)
+	val b3 = parameters.get(4)
+	val c = parameters.get(5)
+	val dc = parameters.get(6)
+	val kw = parameters.get(7)
+	val r1 = parameters.get(8)
+	val s = parameters.get(9)
+
+	var threadLimit = b0
+	if (length < b0) {
+		threadLimit = length - r1
+	} else if (standard != "ASMEB18.2.1.8") {
+		threadLimit = if(length <= 125.0) b1 else if(length <= 200.0) b2 else b3
+	}
+
+	val chamfer = s * (2.0 / sqrt3 - 1.0) * sin(Math.toRadians(25.0))
+	val arc1X = dc / 2.0 - c / 2.0 + (c / 2.0) * sin(beta)
+	val arc1Z = c / 2.0 + (c / 2.0) * cos(beta)
+	val kmean = arc1Z + (arc1X - s / sqrt3) * tanBeta + kw * 1.1 + chamfer
+	val flangeTop = tanBeta * ((dc - c) / 2.0 - s * 0.4 + (c / 2.0) / tan(beta / 2.0))
+
+	val headProfile = workplane("XZ").sketch [
+        moveTo(fix(0.0), fix(kmean * 0.9))
+        .lineTo(fix(s * 0.4 - r1 / 2.0), fix(kmean * 0.9))
+        .threePointArc( #[s * 0.4 - r1 / (2.0 * sqrt2), kmean * 0.9 + r1 / (2.0 * sqrt2)], #[s * 0.4, kmean * 0.9 + r1 / 2.0])
+        .lineTo(fix(s * 0.4), fix(kmean - r1))
+        .threePointArc( #[s * 0.4 + r1 * (1 - 1 / sqrt2), kmean - r1 * (1 - 1 / sqrt2)], #[s * 0.4 + r1, kmean])
+        .lineTo(fix(s / 2.0), fix(kmean))
+        .lineTo(fix(s / 2.0 + (kmean - 0.1) * sqrt3), fix(1.0))
+        .lineTo(fix(0.0), fix(0.1))
+        .close
+    ].revolve[axis = Z]
+	show(headProfile)
+	val hexPrism = workplane("XY").sketch [
+        moveTo(0.0, 0.0).polygon(6, s / sqrt3 * 2.0)
+    ].extrude(kmean)
+	val boltHeadGeo = headProfile.intersect(hexPrism)
+
+	val unthreadedRunout = length - threadLimit
+
+	show(boltHeadGeo)
+	val shaftGeo = workplane("XZ").sketch [
+        moveTo(fix(0.0), fix(flangeTop))
+        .lineTo(fix(0.0), fix(-length))
+        .lineTo(fix(dia * 0.4), fix(-length))
+        .lineTo(fix(dia / 2.0), fix(-length + dia / 10.0))
+        .lineTo(fix(dia / 2.0), fix(-unthreadedRunout))
+        .tangentArc(r1, 90)
+        .lineTo(fix((dc - c) / 2.0), fix(0.0))
+//        .arc(center = #[(dc - c) / 2.0 - c / 2.0, c / 2.0], sweep = 180 - Math.toDegrees(beta))
+//        .lineTo(fix(s * 0.4), fix(flangeTop))
+//        .close
+    ].revolve[axis = Z]
+
+	boltHead.part = part(partDefinition(partID + "_" + d + "_head", boltHeadGeo))
+	boltShaft.part = part(partDefinition(partID + "_" + l + "_shaft", shaftGeo))
+
+	val boltGeo = boltHeadGeo.union(shaftGeo)
+
+//    val threadLength = min(threadLimit, length - r1)
+//    val threadCutter = geometry.createBlindThreadCutter(dia, P, threadLength)
+//        .translate(#[0.0, 0.0, - (length - threadLength)])
+//    val finalBolt = boltGeo.cut(threadCutter)
+	bolt.part = part(partDefinition(partID + "_" + d + "_" + l, boltGeo))
+}
+

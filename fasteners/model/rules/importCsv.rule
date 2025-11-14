@@ -1,0 +1,12 @@
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule importCsv
+do {
+	val csvTest = path("data/iso4014head.csv").readLines
+
+	print(csvTest)
+
+}

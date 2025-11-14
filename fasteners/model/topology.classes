@@ -1,0 +1,28 @@
+package topology
+
+class Bolt {
+	Standard standard
+	BoltHead head
+	BoltShaft shaft
+	Part part
+}
+
+class BoltHead {
+	Drive drive
+	Part part
+}
+
+class Drive {
+
+}
+
+class BoltShaft {
+	thread : String
+	Part part
+}
+
+interface Standard {
+	op getParameters() : Map<String, List<Double>>
+
+	op checkAllowedRange(thread:String, length:String) : Boolean
+}

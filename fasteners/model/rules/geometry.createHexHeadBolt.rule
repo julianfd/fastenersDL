@@ -1,0 +1,77 @@
+import standards.hexheadbolt.ISO4014
+import topology.Bolt
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createHexHeadBolt(d:String = "M6", l:String = "L22", standard:String = "ISO4014") //make enum
+do {
+	/*fastere WB hex head standards
+	 * - DIN 933 hex head screws
+	 * - DIN 961 hex head screws with fine thread
+	 * - ISO 4014 Hex head bolts
+	 * - ISO 4016 hex head bolts, grade c
+	 * - ISO 4017 Hex head screws
+	 * - ISO 4018 hex head screws, grade c
+	 * - ISO 8676 hex head screws with fine thread
+	 * - ISO 8765 hex head bolts with fine thread
+	 * - ASMEB18.2.1.6 hex head bolts */
+	G+[
+		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+	// HEAD
+	var parameters = list
+	var partID = ""
+	switch (standard) {
+		case "ISO4014": {
+			G+[(bolt)-[:standard]->(iSO4014:ISO4014)]
+			parameters = iSO4014.parameters.get(d)
+			partID = "ISO4014"
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented.")
+	}
+	val dia = rule fasteners.rules.geometry.GeometryUtil.op.getDia(d)
+	val length = rule fasteners.rules.geometry.GeometryUtil.op.getLength(l)
+
+	val b = length // thread length //TODO add cases for different standards
+	val P = parameters.get(0) // thread pitch
+	val b1 = parameters.get(1) // partial thread lengths
+	val b2 = parameters.get(2) // partial thread lengths
+	val b3 = parameters.get(3) // partial thread lengths
+	val c = parameters.get(4) // bearing/chamfer height under the head (washer-face thickness)
+	val dw = parameters.get(5) // bearing face diameter under the head
+	val e = parameters.get(6) // head width across corners
+	val k = parameters.get(7) // head height
+	val r = parameters.get(8) // underhead fillet radius
+	val s = parameters.get(9) // head width across flats
+	// head chamfer
+	val cham = (e - s) * sin(Math.toRadians(15))
+	val sqrt3 = sqrt(3)
+
+	val headGeo = workplane("XZ").sketch [
+		moveTo(fix(0), fix(0)).vLine(fix(k+c)).hLine(fix(s/2)).lineTo(fix(s/sqrt3), fix(k - cham))
+		.lineTo(fix(s/sqrt3), fix(c)).lineTo(fix(dw/2), fix(c)).lineTo(fix(dw/2), fix(0)).close
+	].revolve[axis = Z].faces[Q > Z].workplane.sketch[circle(s / sqrt3).moveTo(0, 0).polygon(6, s / sqrt3 * 2)].pocket
+
+	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
+
+	// in case of partially threaded fastener
+	if (length - r > b) {
+	}
+	val shaftGeo = workplane("XZ").sketch [
+		lineTo(dia / 2.0 + r, 0.0).polarArc(180, r, 90)
+		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
+		.lineTo(0, -length).close
+	].revolve[axis = Z]
+
+	boltShaft.part = part(partDefinition(partID + "_" + l + "_shaft", shaftGeo))
+
+	val boltGeo = headGeo.union(shaftGeo)
+	bolt.part = part(partDefinition(partID + "_" + d + "_" + l, boltGeo))
+}

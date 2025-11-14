@@ -1,0 +1,39 @@
+import geo.Workplane
+
+rule geometry.GeometryUtil
+
+op getDia(dia:String) : Double {
+	var diameter = 0.0
+	if (dia.startsWith("(")) {
+		diameter = Double.parseDouble(dia.substring(2, dia.length))
+	} else {
+		diameter = Double.parseDouble(dia.substring(1))
+	}
+	return diameter
+}
+
+op getLength(len:String) : Double {
+	return Double.parseDouble(len.substring(1))
+}
+
+/*
+ * Create standard internal hexagonal driving feature
+ */
+op createHexagonRecess(width:Double, depth:Double, chamfer :boolean) : Workplane {
+	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
+	val hexPrism = workplane.sketch[polygon(6, width/ sqrt(3) * 2)].extrude(depth, [secondLimit = depth])
+	val cone = workplane(plane[origin = #[0,0,depth] normal = #[0, 0, -1]]).cone(
+		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}])
+		.translate(#[0, 0, depth])
+	var recess = hexPrism.intersect(cone)
+	if (chamfer) {
+		val r_3 = width * 0.49
+		val r_2 = 1.005 * width / sqrt(3)
+		val r_1 = depth + r_2 // # math.tan(math.radians(45.)) = 1.
+		val h_1 = r_2 - r_3
+		val cone2 = workplane(plane[origin = #[0,0,depth], normal = #[0, 0, -1]]).
+			cone(r_1, r_3, depth + h_1, [centered = #{true, true, false}]).translate(#[0,0,depth])
+		recess = recess.union(cone2)
+	}
+	return recess
+}
