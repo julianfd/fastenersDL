@@ -1,14 +1,20 @@
-import data.ISO4762
+import standards.cylinderHeadBolt.ISO4762
 import topology.Bolt
 import topology.BoltHead
 import topology.BoltShaft
+import standards.cylinderHeadBolt.CylinderHeadBoltStandard
+import standards.cylinderHeadBolt.CylinderHeadBoltStandardTypes
+import standards.thread.ThreadSize
+import standards.cylinderHeadBolt.DIN6912
+import standards.cylinderHeadBolt.DIN7984
+import standards.cylinderHeadBolt.ISO14570
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createCylinderHeadBolt(d:String = "M6", l:String = "L22", standard:String = "ISO4762")
+rule geometry.createCylinderHeadBolt(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 22[mm], standard:CylinderHeadBoltStandardTypes = CylinderHeadBoltStandardTypes.ISO4762)
 do {
 	/*
 	 * - ISO 4762 heaxagon socket head cap screw
@@ -21,38 +27,47 @@ do {
 	G+[
 		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+		(bolt)-[:standard]->(cylinderHeadBoltStandard:CylinderHeadBoltStandard)
 	]
 	// HEAD
 	var parameters = list
-	var partID = ""
+	var partID = standard.toString
 	switch (standard) {
-		case "ISO4762": {
-			G+[(bolt)-[:standard]->(iSO4762:ISO4762)]
-			parameters = iSO4762.parameters.get(d)
-			partID = "ISO4762"
+		case CylinderHeadBoltStandardTypes.ISO4762: {
+			cylinderHeadBoltStandard.changeClassifier(ISO4762)
+			cylinderHeadBoltStandard.setParameters
+		}
+		case CylinderHeadBoltStandardTypes.DIN6912: {
+			cylinderHeadBoltStandard.changeClassifier(DIN6912)
+			cylinderHeadBoltStandard.setParameters
+		}
+		case CylinderHeadBoltStandardTypes.DIN7984: {
+			cylinderHeadBoltStandard.changeClassifier(DIN7984)
+			cylinderHeadBoltStandard.setParameters
+		}
+		case CylinderHeadBoltStandardTypes.ISO14570: {
+			cylinderHeadBoltStandard.changeClassifier(ISO14570)
+			cylinderHeadBoltStandard.setParameters
 		}
 		default:
 			throw new IllegalArgumentException("standard not implemented.")
 	}
 
-	val dia = rule fasteners.rules.geometry.GeometryUtil.op.getDia(d)
-	val length = rule fasteners.rules.geometry.GeometryUtil.op.getLength(l)
-
-// "Dia","P"0, "b"1 ,"dk_max"2 ,"da"3 ,"ds_min"4 ,"e"5 ,"lf"6 ,"k"7 ,"r"8 ,"s_mean"9 ,"t"10 ,"v"11 ,"dw"12 ,"w"13
-	val P = parameters.get(0) // thread pitch
-	val b = parameters.get(1) // standard threaded length
-	val dk_max = parameters.get(2) // max head diameter
-	val da = parameters.get(3) // bearing-face diameter under head
-	val ds_min = parameters.get(4) // minimum shank/body diameter
-	val e = parameters.get(5) // drive width across corners
-	val k = parameters.get(7) // head height
-	val r = parameters.get(8) // head-to-shank fillet radius
-	val s_mean = parameters.get(9) // mean drive width across flats
-	val t = parameters.get(10) // drive depth (t1 in DIN 6912 table)
+	val dia = cylinderHeadBoltStandard.Dia
+	val P = cylinderHeadBoltStandard.P // thread pitch
+	val b = cylinderHeadBoltStandard.b // standard threaded length
+	val dk_max = cylinderHeadBoltStandard.dk_max // max head diameter
+	val da = cylinderHeadBoltStandard.da // bearing-face diameter under head
+	val ds_min = cylinderHeadBoltStandard.ds_min // minimum shank/body diameter
+	val e = cylinderHeadBoltStandard.e_ // drive width across corners
+	val k = cylinderHeadBoltStandard.k // head height
+	val r = cylinderHeadBoltStandard.r // head-to-shank fillet radius
+	val s_mean = cylinderHeadBoltStandard.s_mean // mean drive width across flats
+	val t = cylinderHeadBoltStandard.t // drive depth (t1 in DIN 6912 table)
 //	val t2 = parameters.get(10) // additional drilled recess depth (DIN 6912 only)
-	val v = parameters.get(11) // head-edge chamfer height/radius
-	val dw = parameters.get(12) // diameter where the top chamfer meets the head
-	val w = parameters.get(13)
+	val v = cylinderHeadBoltStandard.v // head-edge chamfer height/radius
+	val dw = cylinderHeadBoltStandard.dw // diameter where the top chamfer meets the head
+	val w = cylinderHeadBoltStandard.w
 	var headGeo = workplane("XZ").sketch [ moveTo(0, 0).lineTo(0, k).lineTo((dk_max/2)-v, k).tangentArc(v, -90).lineTo(dk_max/2, (dk_max -dw)/2)
 		.lineTo(dw/2, 0).close].revolve[axis = Z]
 
@@ -72,8 +87,8 @@ do {
 		.lineTo(0, -length).close
 	].revolve[axis = Z]
 
-	boltShaft.part = part(partDefinition(partID + "_" + l + "_shaft", shaftGeo))
+	boltShaft.part = part(partDefinition(partID + "_" + length.doubleValue + "_shaft", shaftGeo))
 
 	val boltGeo = headGeo.union(shaftGeo)
-	bolt.part = part(partDefinition(partID + "_" + d + "_" + l, boltGeo))
+	bolt.part = part(partDefinition(partID + "_" + d + "_" + length.doubleValue, boltGeo))
 }

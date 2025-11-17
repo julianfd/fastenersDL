@@ -1,4 +1,5 @@
 import geo.Workplane
+import standards.drivesize.HexalobularDriveSize
 
 rule geometry.GeometryUtil
 
@@ -36,4 +37,127 @@ op createHexagonRecess(width:Double, depth:Double, chamfer :boolean) : Workplane
 		recess = recess.union(cone2)
 	}
 	return recess
+}
+
+op createHexalobularRecess(driveSize:String, depth:Double, chamfer :boolean) : Workplane {
+	G+[
+	    (hexalobularDriveSize:HexalobularDriveSize)
+	]
+	val params = hexalobularDriveSize.parameters.get(driveSize)
+	val A = params.get(0)
+	val B = params.get(1)
+	val Re = params.get(2)
+	val width = sqrt(3) * A / 2
+
+	val Ri = -((B + sqrt(3) * (2.0 * Re - A)) * B + (A - 4.0 * Re) * A) / (4.0 * B - 2.0 * sqrt(3) * A + (4.0 * sqrt(
+		3) - 8.0) * Re)
+	val beta = Math.acos(A / (4 * Ri + 4 * Re) - (2 * Re) / (4 * Ri + 4 * Re)) - pi / 6
+	val Re_x = A / 2.0 - Re + Re * Math.sin(beta)
+	val Re_y = Re * Math.cos(beta)
+	val Ri_y = B / 4.0
+	val Ri_x = sqrt(3) * B / 4.0
+
+	val sketchDef = workplane.sketch [moveTo(Re_x, -Re_y).threePointArc(#[A / 2, 0.0], #[Re_x, Re_y])
+		.threePointArc(#[Ri_x, Ri_y], #[0.5*Re_x + sqrt(3)/2 * Re_y, sqrt(3)/2 * Re_x - 0.5 * Re_y])
+	]
+	var sketch = workplane
+	for (var i = 0; i < 6; i++) {
+		val angleStep = 60 * i
+		sketch = sketch.add(sketchDef.rotate[angle = angleStep])
+	}
+	val prism = workplane.addSketch(sketch).extrude(depth, [secondLimit = depth])
+
+	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
+	val cone = workplane(plane[origin = #[0, 0, depth] normal = #[0, 0, -1]]).cone(
+		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}]).
+		translate(#[0, 0, depth])
+	var recess = prism.intersect(cone)
+	
+	if (chamfer) {
+		val r_1 = 0.505 * A + depth / Math.tan(Math.toRadians(18))
+		val r_2 = 0.49 * B
+		val h_1 = depth + (0.505 * A - 0.49 * B) * Math.tan(Math.toRadians(18))
+		val cone2 = workplane(plane[origin = #[0,0,0], normal = #[0,0,-1]])
+    	.cone(r_1, r_2, h_1, [centered = #{true, true, false}]).translate(#[0,0,depth*2])
+		recess = recess.union(cone2)
+	}
+}
+
+op createSlotRecess(width : Double, depth: Double, headDiameter : Double) : Workplane {
+	
+}
+
+op createCrossRecess(crossType : String, width : Double) : Workplane {
+	/*
+	 * """Create a Cross recess of type H.
+        Oriented in the Z direction , with outer diameter m at Z=0.
+        Parameters:
+        - CrossType: "0", "1", "2", "3", and "4" are supported.
+        - m: Functional outer diameter of the recess.
+             This also affects the overall height of the resulting shape.
+        """
+        b, e_mean, g, f_mean, r, t1, alpha, beta = FsData["iso4757def"][CrossType]
+
+        rad265 = math.radians(26.5)
+        rad28 = math.radians(28.0)
+        tg = (m - g) / 2.0 / math.tan(rad265)  # depth at radius of g
+        t_tot = tg + g / 2.0 * math.tan(rad28)  # total depth
+
+        hm = m / 4.0
+        hmc = m / 2.0
+        rmax = m / 2.0 + hm * math.tan(rad265)
+
+        fm = FSFaceMaker()
+        fm.AddPoints((0.0, hm), (rmax, hm), (g / 2.0, -tg), (0.0, -t_tot))
+        aFace = fm.GetFace()
+        cross = cls.RevolveZ(aFace)
+
+        # we need to cut 4 corners out of the above shape.
+        # Definition of corner:
+        # The angles 92 degrees and alpha are defined on a plane which has
+        # an angle of beta against our coordinate system.
+        # The projected angles are needed for easier calculation!
+        rad_alpha = math.radians(alpha / 2.0)
+        rad92 = math.radians(92.0 / 2.0)
+        rad_beta = math.radians(beta)
+
+        rad_alpha_p = math.atan(math.tan(rad_alpha) / math.cos(rad_beta))
+        rad92_p = math.atan(math.tan(rad92) / math.cos(rad_beta))
+
+        tb = tg + (g - b) / 2.0 * math.tan(rad28)  # depth at dimension b
+        # radius of b-corner at hm
+        rbtop = b / 2.0 + (hmc + tb) * math.tan(rad_beta)
+        # radius of b-corner at t_tot
+        rbtot = b / 2.0 - (t_tot - tb) * math.tan(rad_beta)
+
+        # delta between corner b and corner e in x direction
+        dre = e_mean / 2.0 / math.tan(rad_alpha_p)
+
+        dx = m / 2.0 * math.cos(rad92_p)
+        dy = m / 2.0 * math.sin(rad92_p)
+
+        PntC0 = Base.Vector(rbtop, 0.0, hmc)
+        PntC1 = Base.Vector(rbtot, 0.0, -t_tot)
+        PntC3 = Base.Vector(rbtot + dre, +e_mean / 2.0, -t_tot)
+        PntC5 = Base.Vector(rbtot + dre, -e_mean / 2.0, -t_tot)
+        PntC7 = Base.Vector(rbtot + dre + 2.0 * dx, +e_mean + 2.0 * dy, -t_tot)
+        PntC9 = Base.Vector(rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy, -t_tot)
+
+        wire_t_tot = Part.makePolygon(
+            [PntC1, PntC3, PntC7, PntC9, PntC5, PntC1])
+        edgeC1 = Part.makeLine(PntC0, PntC1)
+        makeSolid = True
+        isFrenet = False
+        corner = Part.Wire(edgeC1).makePipeShell(
+            [wire_t_tot], makeSolid, isFrenet)
+        for i in range(4):
+            cross = cross.cut(
+                corner.rotated(
+                    Base.Vector(0, 0, 0),
+                    Base.Vector(0, 0, 1),
+                    90 * i
+                )
+            )
+        return Part.Solid(cross)
+	 */
 }

@@ -5,25 +5,68 @@
  */
 rule test
 do {
-	val width = 5.06
-	val depth = 3.0
-	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
-	val hexPrism = workplane.sketch[polygon(6, width/ sqrt(3) * 2)].extrude(depth, [secondLimit = depth])
-	val cone = workplane(plane[origin = #[0,0,depth] normal = #[0, 0, -1]]).cone(
-		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}])
-		.translate(#[0, 0, depth])
-	var recess = hexPrism.intersect(cone)
-	show(recess)
+	// hexagon recess
+//	val width = 5.06
+//	val depth = 3.0
+//	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
+//	val hexPrism = workplane.sketch[polygon(6, width/ sqrt(3) * 2)].extrude(depth, [secondLimit = depth])
+//	val cone = workplane(plane[origin = #[0,0,depth] normal = #[0, 0, -1]]).cone(
+//		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}])
+//		.translate(#[0, 0, depth])
+//	var recess = hexPrism.intersect(cone)
+//
+//	if (true) {
+//		val r_3 = width * 0.49
+//		val r_2 = 1.005 * width / sqrt(3)
+//		val r_1 = depth + r_2 // # math.tan(math.radians(45.)) = 1.
+//		val h_1 = r_2 - r_3
+//		val cone2 = workplane(plane[origin = #[0,0,depth], normal = #[0, 0, -1]]).
+//			cone(r_1, r_3, depth + h_1, [centered = #{true, true, false}]).translate(#[0,0,depth])
+//		recess = recess.union(cone2)
+//	}
+//	show(recess)
+	// hexalobular recess
+	val params = #{6.75, 4.76, 0.56}
+	val driveSize = "T40"
+	val A = params.get(0)
+	val B = params.get(1)
+	val Re = params.get(2)
+	val width = sqrt(3) * A / 2
+	val depth = 5.06
 
+	val Ri = -((B + sqrt(3) * (2.0 * Re - A)) * B + (A - 4.0 * Re) * A) / (4.0 * B - 2.0 * sqrt(3) * A + (4.0 * sqrt(
+		3) - 8.0) * Re)
+	val beta = Math.acos(A / (4 * Ri + 4 * Re) - (2 * Re) / (4 * Ri + 4 * Re)) - pi / 6
+	val Re_x = A / 2.0 - Re + Re * Math.sin(beta)
+	val Re_y = Re * Math.cos(beta)
+	val Ri_y = B / 4.0
+	val Ri_x = sqrt(3) * B / 4.0
+
+	val sketchDef = workplane.sketch [moveTo(Re_x, -Re_y).threePointArc(#[A / 2, 0.0], #[Re_x, Re_y])
+		.threePointArc(#[Ri_x, Ri_y], #[0.5*Re_x + sqrt(3)/2 * Re_y, sqrt(3)/2 * Re_x - 0.5 * Re_y])
+	]
+	var sketch = workplane
+	for (var i = 0; i < 6; i++) {
+		val angleStep = 60 * i
+		sketch = sketch.add(sketchDef.rotate[angle = angleStep])
+	}
+	val prism = workplane.addSketch(sketch).extrude(depth, [secondLimit = depth])
+
+	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
+	val cone = workplane(plane[origin = #[0, 0, depth] normal = #[0, 0, -1]]).cone(
+		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}]).
+		translate(#[0, 0, depth])
+	var recess = prism.intersect(cone)
+	
 	if (true) {
-		val r_3 = width * 0.49
-		val r_2 = 1.005 * width / sqrt(3)
-		val r_1 = depth + r_2 // # math.tan(math.radians(45.)) = 1.
-		val h_1 = r_2 - r_3
-		val cone2 = workplane(plane[origin = #[0,0,depth+coneOffset], normal = #[0, 0, -1]]).
-			cone(r_1, r_3, depth + h_1, [centered = #{true, true, false}]).translate(#[0,0,depth])
-		show(recess, cone2)
+		val r_1 = 0.505 * A + depth / Math.tan(Math.toRadians(18))
+		val r_2 = 0.49 * B
+		val h_1 = depth + (0.505 * A - 0.49 * B) * Math.tan(Math.toRadians(18))
+		val cone2 = workplane(plane[origin = #[0,0,0], normal = #[0,0,-1]])
+    	.cone(r_1, r_2, h_1, [centered = #{true, true, false}]).translate(#[0,0,depth*2])
 		recess = recess.union(cone2)
 	}
 	show(recess)
+
+	show
 }

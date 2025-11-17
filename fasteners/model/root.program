@@ -3,6 +3,5 @@ program root {
 	rule geometry.createHexHeadBoltWithFlange
 	rule geometry.createCylinderHeadBolt
 	rule geometry.createHexHeadBolt
-
-	rule test
+//	rule test
 }

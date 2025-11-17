@@ -1,14 +1,19 @@
 import standards.hexheadbolt.ISO4014
+import standards.thread.ThreadSize
 import topology.Bolt
 import topology.BoltHead
 import topology.BoltShaft
+import standards.hexheadbolt.HexHeadStandardType
+import topology.Standard
+import standards.hexheadbolt.HexHeadStandard
+import standards.hexheadbolt.DIN933
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBolt(d:String = "M6", l:String = "L22", standard:String = "ISO4014") //make enum
+rule geometry.createHexHeadBolt(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 22[mm], standard:HexHeadStandardType = HexHeadStandardType.ISO4014) //make enum
 do {
 	/*fastere WB hex head standards
 	 * - DIN 933 hex head screws
@@ -23,34 +28,36 @@ do {
 	G+[
 		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+		(bolt)-[:standard]->(hexHeadStandard:HexHeadStandard)
 	]
 	// HEAD
-	var parameters = list
-	var partID = ""
+	var partID = standard.toString
 	switch (standard) {
-		case "ISO4014": {
-			G+[(bolt)-[:standard]->(iSO4014:ISO4014)]
-			parameters = iSO4014.parameters.get(d)
-			partID = "ISO4014"
+		case ISO4014: {
+			hexHeadStandard.changeClassifier(ISO4014)
+			hexHeadStandard.setParameters
+		}
+		case DIN933: {
+			hexHeadStandard.changeClassifier(DIN933)
+			hexHeadStandard.setParameters
 		}
 		default:
 			throw new IllegalArgumentException("standard not implemented.")
 	}
-	val dia = rule fasteners.rules.geometry.GeometryUtil.op.getDia(d)
-	val length = rule fasteners.rules.geometry.GeometryUtil.op.getLength(l)
 
+	val dia = hexHeadStandard.dia
 	val b = length // thread length //TODO add cases for different standards
-	val P = parameters.get(0) // thread pitch
-	val b1 = parameters.get(1) // partial thread lengths
-	val b2 = parameters.get(2) // partial thread lengths
-	val b3 = parameters.get(3) // partial thread lengths
-	val c = parameters.get(4) // bearing/chamfer height under the head (washer-face thickness)
-	val dw = parameters.get(5) // bearing face diameter under the head
-	val e = parameters.get(6) // head width across corners
-	val k = parameters.get(7) // head height
-	val r = parameters.get(8) // underhead fillet radius
-	val s = parameters.get(9) // head width across flats
-	// head chamfer
+	val P = hexHeadStandard.P // thread pitch
+	val b1 = hexHeadStandard.b1 // partial thread lengths
+	val b2 = hexHeadStandard.b2 // partial thread lengths
+	val b3 = hexHeadStandard.b3 // partial thread lengths
+	val c = hexHeadStandard.c // bearing/chamfer height under the head (washer-face thickness)
+	val dw = hexHeadStandard.dw // bearing face diameter under the head
+	val e = hexHeadStandard.e_ // head width across corners
+	val k = hexHeadStandard.k // head height
+	val r = hexHeadStandard.r // underhead fillet radius
+	val s = hexHeadStandard.s // head width across flats
+	// head chamfer 
 	val cham = (e - s) * sin(Math.toRadians(15))
 	val sqrt3 = sqrt(3)
 
@@ -70,8 +77,8 @@ do {
 		.lineTo(0, -length).close
 	].revolve[axis = Z]
 
-	boltShaft.part = part(partDefinition(partID + "_" + l + "_shaft", shaftGeo))
+	boltShaft.part = part(partDefinition(partID + "_" + length.doubleValue + "_shaft", shaftGeo))
 
 	val boltGeo = headGeo.union(shaftGeo)
-	bolt.part = part(partDefinition(partID + "_" + d + "_" + l, boltGeo))
+	bolt.part = part(partDefinition(partID + "_" + d + "_" + length.doubleValue, boltGeo))
 }

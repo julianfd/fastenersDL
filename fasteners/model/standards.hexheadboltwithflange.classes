@@ -1,104 +1,134 @@
 package standards.hexheadboltwithflange
 
 import topology.Standard
+import standards.thread.ThreadSize
 
 interface HexHeadWithFlangeStandard extends Standard {
+	thread : ThreadSize
+	length : Unit[mm]
+	Dia    : Unit[mm] // fastener nominal diameter (shank outside diameter)
+	P      : Unit[mm] // thread pitch
+	b0     : Unit[mm] // full-thread length for short screws (used when L < b0)
+	b1     : Unit[mm] // standard thread engagement for L ≤ 125 mm
+	b2     : Unit[mm] // standard thread engagement for 125 mm < L ≤ 200 mm
+	b3     : Unit[mm] // standard thread engagement for L > 200 mm
+	c      : Unit[mm] // flange thickness / axial length of the rounded fillet
+	dc     : Unit[mm] // flange outside diameter along the bearing face
+	kw     : Unit[mm] // washer-face thickness above the flange blend (head “skirt”)
+	r1     : Unit[mm] // fillet radius between head and shank
+	s      : Unit[mm] // hex width across flats at the head
+
+	op setParameters() {
+		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm] // TODO remove Utimethod
+		val parameters = parameters.get(thread)
+		P = parameters.get(0) * 1[mm]
+		b0 = parameters.get(1) * 1[mm]
+		b1 = parameters.get(2) * 1[mm]
+		b2 = parameters.get(3) * 1[mm]
+		b3 = parameters.get(4) * 1[mm]
+		c = parameters.get(5) * 1[mm]
+		dc = parameters.get(6) * 1[mm]
+		kw = parameters.get(7) * 1[mm]
+		r1 = parameters.get(8) * 1[mm]
+		s = parameters.get(9) * 1[mm]
+	}
+}
+
+enum HexHeadWithFlangeStandardType {
+	EN1662, EN1665, ISO4162, ISO15071
 }
 
 class EN1662 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("M5", #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.4, 2.3, 0.2, 7.0})
-		paramMap.put("M6", #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 13.6, 2.9, 0.25, 8.0})
-		paramMap.put("M8", #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 17.0, 3.8, 0.4, 10.0})
-		paramMap.put("M10", #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
-		paramMap.put("M12", #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 16.0})
-		paramMap.put("(M14)", #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 28.6, 5.6, 0.6, 18.0})
-		paramMap.put("M16", #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 32.8, 6.8, 0.6, 21.0})
+		paramMap.put(ThreadSize.M5, #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.4, 2.3, 0.2, 7.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 13.6, 2.9, 0.25, 8.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 17.0, 3.8, 0.4, 10.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
+		paramMap.put(ThreadSize.M12, #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 16.0})
+		paramMap.put((ThreadSize.M14), #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 28.6, 5.6, 0.6, 18.0})
+		paramMap.put(ThreadSize.M16, #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 32.8, 6.8, 0.6, 21.0})
 		return paramMap
 	}
 }
 
 class EN1665 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("M5", #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.8, 2.6, 0.2, 8.0})
-		paramMap.put("M6", #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 14.2, 3.0, 0.25, 10.0})
-		paramMap.put("M8", #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 18.0, 3.9, 0.4, 13.0})
-		paramMap.put("M10", #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 22.3, 4.1, 0.4, 16.0})
-		paramMap.put("M12", #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 26.6, 5.6, 0.6, 18.0})
-		paramMap.put("(M14)", #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 30.5, 6.5, 0.6, 21.0})
-		paramMap.put("M16", #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 35.0, 7.3, 0.6, 24.0})
-		paramMap.put("M20", #{2.5, 65.0, 46.0, 52.0, 65.0, 3.0, 43.0, 8.9, 0.8, 30.0})
+		paramMap.put(ThreadSize.M5, #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.8, 2.6, 0.2, 8.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 14.2, 3.0, 0.25, 10.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 18.0, 3.9, 0.4, 13.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 22.3, 4.1, 0.4, 16.0})
+		paramMap.put(ThreadSize.M12, #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 26.6, 5.6, 0.6, 18.0})
+		paramMap.put((ThreadSize.M14), #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 30.5, 6.5, 0.6, 21.0})
+		paramMap.put(ThreadSize.M16, #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 35.0, 7.3, 0.6, 24.0})
+		paramMap.put(ThreadSize.M20, #{2.5, 65.0, 46.0, 52.0, 65.0, 3.0, 43.0, 8.9, 0.8, 30.0})
 		return paramMap
 	}
 }
 
 class ISO4162 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("M5", #{0.8, 25, 16, 0, 0, 1, 11.4, 2.3, 0.2, 7})
-		paramMap.put("M6", #{1, 30, 18, 0, 0, 1.1, 13.6, 2.9, 0.25, 8})
-		paramMap.put("M8", #{1.25, 35, 22, 28, 0, 1.2, 17, 3.8, 0.4, 10})
-		paramMap.put("M10", #{1.5, 40, 26, 32, 0, 1.5, 20.8, 4.3, 0.4, 13})
-		paramMap.put("M12", #{1.75, 45, 30, 36, 0, 1.8, 24.7, 5.4, 0.6, 15})
-		paramMap.put("(M14)", #{2, 50, 34, 40, 0, 2.1, 28.6, 5.6, 0.6, 18})
-		paramMap.put("M16", #{2, 55, 38, 44, 57, 2.4, 32.8, 6.7, 0.6, 21})
+		paramMap.put(ThreadSize.M5, #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.4, 2.3, 0.2, 7.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 13.6, 2.9, 0.25, 8.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 17.0, 3.8, 0.4, 10.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
+		paramMap.put(ThreadSize.M12, #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 15.0})
+		paramMap.put((ThreadSize.M14), #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 28.6, 5.6, 0.6, 18.0})
+		paramMap.put(ThreadSize.M16, #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 32.8, 6.7, 0.6, 21.0})
 		return paramMap
 	}
 }
 
 class ISO15071 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("M5", #{0.8, 25, 16, 0, 0, 1, 11.4, 2.3, 0.2, 7})
-		paramMap.put("M6", #{1, 30, 18, 0, 0, 1.1, 13.6, 2.9, 0.25, 8})
-		paramMap.put("M8", #{1.25, 35, 22, 28, 0, 1.2, 17, 3.8, 0.4, 10})
-		paramMap.put("M10", #{1.5, 40, 26, 32, 0, 1.5, 20.8, 4.3, 0.4, 13})
-		paramMap.put("M12", #{1.75, 45, 30, 36, 0, 1.8, 24.7, 5.4, 0.6, 15})
-		paramMap.put("(M14)", #{2, 50, 34, 40, 0, 2.1, 28.6, 5.6, 0.6, 18})
-		paramMap.put("M16", #{2, 55, 38, 44, 57, 2.4, 32.8, 6.8, 0.6, 21})
+		paramMap.put(ThreadSize.M5, #{0.8, 25.0, 16.0, 0.0, 0.0, 1.0, 11.4, 2.3, 0.2, 7.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 30.0, 18.0, 0.0, 0.0, 1.1, 13.6, 2.9, 0.25, 8.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 35.0, 22.0, 28.0, 0.0, 1.2, 17.0, 3.8, 0.4, 10.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
+		paramMap.put(ThreadSize.M12, #{1.75, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 15.0})
+		paramMap.put((ThreadSize.M14), #{2.0, 50.0, 34.0, 40.0, 0.0, 2.1, 28.6, 5.6, 0.6, 18.0})
+		paramMap.put(ThreadSize.M16, #{2.0, 55.0, 38.0, 44.0, 57.0, 2.4, 32.8, 6.8, 0.6, 21.0})
 		return paramMap
 	}
 }
 
-class ISO15072 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
-		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("M8x1", #{1, 35, 22, 28, 0, 1.2, 17, 3.8, 0.4, 10})
-		paramMap.put("M10x1", #{1, 40, 26, 32, 0, 1.5, 20.8, 4.3, 0.4, 13})
-		paramMap.put("M10x1.25", #{1.25, 40, 26, 32, 0, 1.5, 20.8, 4.3, 0.4, 13})
-		paramMap.put("M12x1.25", #{1.25, 45, 30, 36, 0, 1.8, 24.7, 5.4, 0.6, 15})
-		paramMap.put("M12x1.5", #{1.5, 45, 30, 36, 0, 1.8, 24.7, 5.4, 0.6, 15})
-		paramMap.put("(M14x1.5)", #{1.5, 50, 34, 40, 0, 2.1, 28.6, 5.6, 0.6, 18})
-		paramMap.put("M16x1.5", #{1.5, 55, 38, 44, 57, 2.4, 32.8, 6.8, 0.6, 21})
-		return paramMap
-	}
-}
+//class ISO15072 extends HexHeadWithFlangeStandard {
+//	@Override
+//	op getParameters() : Map<ThreadSize, List<Unit[mm]>> {
+//		val paramMap = map
+//		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
+//		paramMap.put(ThreadSize.M8x1, #{1.0, 35.0, 22.0, 28.0, 0.0, 1.2, 17.0, 3.8, 0.4, 10.0})
+//		paramMap.put(ThreadSize.M10x1, #{1.0, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
+//		paramMap.put(ThreadSize.M10x1.25, #{1.25, 40.0, 26.0, 32.0, 0.0, 1.5, 20.8, 4.3, 0.4, 13.0})
+//		paramMap.put(ThreadSize.M12x1.25, #{1.25, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 15.0})
+//		paramMap.put(ThreadSize.M12x1.5, #{1.5, 45.0, 30.0, 36.0, 0.0, 1.8, 24.7, 5.4, 0.6, 15.0})
+//		paramMap.put((ThreadSize.M14x1.5), #{1.5, 50.0, 34.0, 40.0, 0.0, 2.1, 28.6, 5.6, 0.6, 18.0})
+//		paramMap.put(ThreadSize.M16x1.5, #{1.5, 55.0, 38.0, 44.0, 57.0, 2.4, 32.8, 6.8, 0.6, 21.0})
+//		return paramMap
+//	}
+//}
 
-class ASMEB18218 extends HexHeadWithFlangeStandard {
-	@Override
-	op getParameters() : Map<String, List<Double>> {
-		val paramMap = map
-		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
-		paramMap.put("1/4in", #{1.27, 19.05, 0.0, 0.0, 0.0, 0.9525, 14.2875, 2.8575, 0.3175, 9.525})
-		paramMap.put("5/16in", #{1.41111111111111, 22.225, 0.0, 0.0, 0.0, 1.190625, 17.4625, 3.571875, 0.396875, 12.7})
-		paramMap.put("3/8in", #{1.5875, 25.4, 0.0, 0.0, 0.0, 1.42875, 20.6375, 4.28625, 0.47625, 14.2875})
-		paramMap.put("7/16in", #{
-			1.81428571428571, 28.575, 0.0, 0.0, 0.0, 1.666875, 23.8125, 5.000625, 0.555625, 15.875})
-		paramMap.put("1/2in", #{1.95384615384615, 31.75, 0.0, 0.0, 0.0, 1.905, 27.384375, 5.715, 0.635, 19.05})
-		paramMap.put("5/8in", #{2.30909090909091, 38.1, 0.0, 0.0, 0.0, 2.38125, 33.734375, 7.14375, 0.79375, 23.8125})
-		paramMap.put("3/4in", #{2.54, 44.45, 0.0, 0.0, 0.0, 2.8575, 40.48125, 8.5725, 0.9525, 28.575})
-		return paramMap
-	}
-}
+//TODO remove: only metric!
+//class ASMEB18218 extends HexHeadWithFlangeStandard {
+//	@Override
+//	op getParameters() : Map<ThreadSize, List<Unit[mm]>> {
+//		val paramMap = map
+//		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
+//		paramMap.put(1/4in, #{1.27, 19.05, 0.0, 0.0, 0.0, 0.9525, 14.2875, 2.8575, 0.3175, 9.525})
+//		paramMap.put(5/16in, #{1.41111111111111, 22.225, 0.0, 0.0, 0.0, 1.190625, 17.4625, 3.571875, 0.396875, 12.7})
+//		paramMap.put(3/8in, #{1.5875, 25.4, 0.0, 0.0, 0.0, 1.42875, 20.6375, 4.28625, 0.47625, 14.2875})
+//		paramMap.put(7/16in, #{
+//			1.81428571428571, 28.575, 0.0, 0.0, 0.0, 1.666875, 23.8125, 5.000625, 0.555625, 15.875})
+//		paramMap.put(1/2in, #{1.95384615384615, 31.75, 0.0, 0.0, 0.0, 1.905, 27.384375, 5.715, 0.635, 19.05})
+//		paramMap.put(5/8in, #{2.30909090909091, 38.1, 0.0, 0.0, 0.0, 2.38125, 33.734375, 7.14375, 0.79375, 23.8125})
+//		paramMap.put(3/4in, #{2.54, 44.45, 0.0, 0.0, 0.0, 2.8575, 40.48125, 8.5725, 0.9525, 28.575})
+//		return paramMap
+//	}
+//}

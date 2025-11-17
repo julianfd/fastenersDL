@@ -1,6 +1,9 @@
 package topology
 
+import standards.thread.ThreadSize
+
 class Bolt {
+
 	Standard standard
 	BoltHead head
 	BoltShaft shaft
@@ -22,7 +25,14 @@ class BoltShaft {
 }
 
 interface Standard {
-	op getParameters() : Map<String, List<Double>>
 
-	op checkAllowedRange(thread:String, length:String) : Boolean
+	op setParameters()
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		print("fuck")
+		return map
+	}
+
+	op checkAllowedRange(thread:ThreadSize, length:Unit[mm]) : Boolean
 }
+
