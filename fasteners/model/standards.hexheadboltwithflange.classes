@@ -2,8 +2,10 @@ package standards.hexheadboltwithflange
 
 import topology.Standard
 import standards.thread.ThreadSize
+import topology.Bolt
 
-interface HexHeadWithFlangeStandard extends Standard {
+class HexHeadWithFlangeBolt extends Bolt {
+	HexHeadWithFlangeStandard standard
 	thread : ThreadSize
 	length : Unit[mm]
 	Dia    : Unit[mm] // fastener nominal diameter (shank outside diameter)
@@ -18,9 +20,10 @@ interface HexHeadWithFlangeStandard extends Standard {
 	r1     : Unit[mm] // fillet radius between head and shank
 	s      : Unit[mm] // hex width across flats at the head
 
-	op setParameters() {
+	op setParameters(d:ThreadSize) {
+		thread = d
 		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm] // TODO remove Utimethod
-		val parameters = parameters.get(thread)
+		val parameters = standard.getParameters.get(d)
 		P = parameters.get(0) * 1[mm]
 		b0 = parameters.get(1) * 1[mm]
 		b1 = parameters.get(2) * 1[mm]
@@ -34,11 +37,15 @@ interface HexHeadWithFlangeStandard extends Standard {
 	}
 }
 
+interface HexHeadWithFlangeStandard extends Standard {
+}
+
 enum HexHeadWithFlangeStandardType {
 	EN1662, EN1665, ISO4162, ISO15071
 }
 
 class EN1662 extends HexHeadWithFlangeStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
@@ -54,6 +61,7 @@ class EN1662 extends HexHeadWithFlangeStandard {
 }
 
 class EN1665 extends HexHeadWithFlangeStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
@@ -70,6 +78,7 @@ class EN1665 extends HexHeadWithFlangeStandard {
 }
 
 class ISO4162 extends HexHeadWithFlangeStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s
@@ -85,6 +94,7 @@ class ISO4162 extends HexHeadWithFlangeStandard {
 }
 
 class ISO15071 extends HexHeadWithFlangeStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// order: P, b0, b1, b2, b3, c, dc, kw, r1, s

@@ -2,9 +2,10 @@ package standards.hexheadbolt
 
 import topology.Standard
 import standards.thread.ThreadSize
+import topology.Bolt
 
-interface HexHeadStandard extends Standard {
-
+class HexHeadBolt extends Bolt {
+	HexHeadStandard standard
 	thread : ThreadSize
 	length : Unit[mm]
 	Dia    : Unit[mm] // nominal shank diameter (equals thread major diameter)
@@ -18,11 +19,11 @@ interface HexHeadStandard extends Standard {
 	k      : Unit[mm] // head height
 	r      : Unit[mm] // head-to-shank fillet radius
 	s      : Unit[mm] // hex width across flats
-	
-	@Override
-	op setParameters() {
+
+	op setParameters(d:ThreadSize) {
+		thread = d
 		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm] // TODO remove Utimethod
-		val parameters = parameters.get(thread)
+		val parameters = standard.getParameters.get(thread)
 		P = parameters.get(0) * 1[mm]
 		b1 = parameters.get(1) * 1[mm]
 		b2 = parameters.get(2) * 1[mm]
@@ -36,11 +37,15 @@ interface HexHeadStandard extends Standard {
 	}
 }
 
+interface HexHeadStandard extends Standard {
+}
+
 enum HexHeadStandardType {
 	ISO4014, DIN933
 }
 
 class ISO4014 extends HexHeadStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// Dia,P0 ,b11 ,b22 ,b33 ,c4 ,dw5 ,e6 ,k7 ,r8 ,s9
@@ -81,6 +86,7 @@ class ISO4014 extends HexHeadStandard {
 }
 
 class DIN933 extends HexHeadStandard {
+	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// Dia,P0 ,b11 ,b22 ,b33 ,c4 ,dw5 ,e6 ,k7 ,r8 ,s9

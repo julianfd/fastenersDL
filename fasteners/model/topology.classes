@@ -3,8 +3,6 @@ package topology
 import standards.thread.ThreadSize
 
 class Bolt {
-
-	Standard standard
 	BoltHead head
 	BoltShaft shaft
 	Part part
@@ -19,6 +17,10 @@ class Drive {
 
 }
 
+enum RecessType {
+	HEX, HEXALOBULAR, CROSS
+}
+
 class BoltShaft {
 	thread : String
 	Part part
@@ -26,12 +28,9 @@ class BoltShaft {
 
 interface Standard {
 
-	op setParameters()
+	op setParameters(d:ThreadSize)
 
-	op getParameters() : Map<ThreadSize, List<Double>> {
-		print("fuck")
-		return map
-	}
+	op getParameters() : Map<ThreadSize, List<Double>>
 
 	op checkAllowedRange(thread:ThreadSize, length:Unit[mm]) : Boolean
 }

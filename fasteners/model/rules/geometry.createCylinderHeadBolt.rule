@@ -1,20 +1,22 @@
-import standards.cylinderHeadBolt.ISO4762
+import standards.cylinderheadbolt.CylinderHeadBoltStandard
+import standards.cylinderheadbolt.CylinderHeadBoltStandardTypes
+import standards.cylinderheadbolt.DIN6912
+import standards.cylinderheadbolt.DIN7984
+import standards.cylinderheadbolt.ISO14579
+import standards.cylinderheadbolt.ISO4762
+import standards.thread.ThreadSize
 import topology.Bolt
 import topology.BoltHead
 import topology.BoltShaft
-import standards.cylinderHeadBolt.CylinderHeadBoltStandard
-import standards.cylinderHeadBolt.CylinderHeadBoltStandardTypes
-import standards.thread.ThreadSize
-import standards.cylinderHeadBolt.DIN6912
-import standards.cylinderHeadBolt.DIN7984
-import standards.cylinderHeadBolt.ISO14570
+import topology.RecessType
+import standards.cylinderheadbolt.CylinderHeadBolt
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createCylinderHeadBolt(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 22[mm], standard:CylinderHeadBoltStandardTypes = CylinderHeadBoltStandardTypes.ISO4762)
+rule geometry.createCylinderHeadBolt(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 22[mm], standard:CylinderHeadBoltStandardTypes = CylinderHeadBoltStandardTypes.ISO14579)
 do {
 	/*
 	 * - ISO 4762 heaxagon socket head cap screw
@@ -25,56 +27,63 @@ do {
 	 * - ASMEB18.3.1G hexagon socket low head cap screw
 	 */
 	G+[
-		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
+		(bolt:CylinderHeadBolt)-[:head]->(boltHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
-		(bolt)-[:standard]->(cylinderHeadBoltStandard:CylinderHeadBoltStandard)
 	]
 	// HEAD
 	var parameters = list
 	var partID = standard.toString
+	var recess = RecessType.HEX // default value
+	var hexalobularSize = ""
 	switch (standard) {
 		case CylinderHeadBoltStandardTypes.ISO4762: {
-			cylinderHeadBoltStandard.changeClassifier(ISO4762)
-			cylinderHeadBoltStandard.setParameters
+			G+[(bolt)-[:standard]->(:ISO4762)]
 		}
 		case CylinderHeadBoltStandardTypes.DIN6912: {
-			cylinderHeadBoltStandard.changeClassifier(DIN6912)
-			cylinderHeadBoltStandard.setParameters
+			G+[(bolt)-[:standard]->(:DIN6912)]
 		}
 		case CylinderHeadBoltStandardTypes.DIN7984: {
-			cylinderHeadBoltStandard.changeClassifier(DIN7984)
-			cylinderHeadBoltStandard.setParameters
+			G+[(bolt)-[:standard]->(:DIN7984)]
 		}
-		case CylinderHeadBoltStandardTypes.ISO14570: {
-			cylinderHeadBoltStandard.changeClassifier(ISO14570)
-			cylinderHeadBoltStandard.setParameters
+		case CylinderHeadBoltStandardTypes.ISO14579: {
+			G+[(bolt)-[:standard]->(std:ISO14579)]
+			std.setDriveSize(d)
+			recess = RecessType.HEXALOBULAR
+			hexalobularSize = std.driveSize
 		}
 		default:
 			throw new IllegalArgumentException("standard not implemented.")
 	}
 
-	val dia = cylinderHeadBoltStandard.Dia
-	val P = cylinderHeadBoltStandard.P // thread pitch
-	val b = cylinderHeadBoltStandard.b // standard threaded length
-	val dk_max = cylinderHeadBoltStandard.dk_max // max head diameter
-	val da = cylinderHeadBoltStandard.da // bearing-face diameter under head
-	val ds_min = cylinderHeadBoltStandard.ds_min // minimum shank/body diameter
-	val e = cylinderHeadBoltStandard.e_ // drive width across corners
-	val k = cylinderHeadBoltStandard.k // head height
-	val r = cylinderHeadBoltStandard.r // head-to-shank fillet radius
-	val s_mean = cylinderHeadBoltStandard.s_mean // mean drive width across flats
-	val t = cylinderHeadBoltStandard.t // drive depth (t1 in DIN 6912 table)
+	bolt.setParameters(d)
+	val dia = bolt.Dia
+	val P = bolt.P // thread pitch
+	val b = bolt.b // standard threaded length
+	val dk_max = bolt.dk_max // max head diameter
+	val da = bolt.da // bearing-face diameter under head
+	val ds_min = bolt.ds_min // minimum shank/body diameter
+	val e = bolt.e_ // drive width across corners
+	val k = bolt.k // head height
+	val r = bolt.r // head-to-shank fillet radius
+	val s_mean = bolt.s_mean // mean drive width across flats
+	val t = bolt.t // drive depth (t1 in DIN 6912 table)
 //	val t2 = parameters.get(10) // additional drilled recess depth (DIN 6912 only)
-	val v = cylinderHeadBoltStandard.v // head-edge chamfer height/radius
-	val dw = cylinderHeadBoltStandard.dw // diameter where the top chamfer meets the head
-	val w = cylinderHeadBoltStandard.w
+	val v = bolt.v // head-edge chamfer height/radius
+	val dw = bolt.dw // diameter where the top chamfer meets the head
+	val w = bolt.w
 	var headGeo = workplane("XZ").sketch [ moveTo(0, 0).lineTo(0, k).lineTo((dk_max/2)-v, k).tangentArc(v, -90).lineTo(dk_max/2, (dk_max -dw)/2)
 		.lineTo(dw/2, 0).close].revolve[axis = Z]
 
 	print(s_mean + " " + t)
-	val recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(s_mean, t, true).translate(
-		#[0, 0, k - t])
-	headGeo = headGeo.cut(recess)
+	var recessGeo = workplane
+	if (recess.equals(RecessType.HEX)) {
+		recessGeo = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(s_mean, t, true).translate(
+			#[0, 0, k - t])
+	} else if (recess.equals(RecessType.HEXALOBULAR)) {
+		recessGeo = rule fasteners.rules.geometry.GeometryUtil.op.createHexalobularRecess(hexalobularSize, t, true).
+			translate(#[0, 0, k - t])
+	}
+	headGeo = headGeo.cut(recessGeo)
 
 	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
 

@@ -1,14 +1,12 @@
 import standards.hexheadboltwithflange.EN1662
 import standards.hexheadboltwithflange.EN1665
+import standards.hexheadboltwithflange.HexHeadWithFlangeBolt
+import standards.hexheadboltwithflange.HexHeadWithFlangeStandardType
 import standards.hexheadboltwithflange.ISO15071
 import standards.hexheadboltwithflange.ISO4162
-import topology.Bolt
+import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
-import standards.thread.ThreadSize
-import topology.Standard
-import standards.hexheadboltwithflange.HexHeadWithFlangeStandard
-import standards.hexheadboltwithflange.HexHeadWithFlangeStandardType
 
 /**
  * @match
@@ -22,29 +20,24 @@ rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, length:U
 // intersecting it with a hex prism, then fuses it with the shaft+flange of the bolt.
 do {
 	G+[
-		(bolt:Bolt)-[:head]->(boltHead:BoltHead)
+		(bolt:HexHeadWithFlangeBolt)-[:head]->(boltHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
-		(bolt)-[:standard]->(hexHeadWithFlangeStandard:HexHeadWithFlangeStandard)
 	]
 
 	var parameters = list
 	var partID = standard.toString
 	switch (standard) {
 		case EN1662: {
-			hexHeadWithFlangeStandard.changeClassifier(EN1662)
-			hexHeadWithFlangeStandard.setParameters
+			G+[(bolt)-[:standard]->(:EN1662)]
 		}
 		case EN1665: {
-			hexHeadWithFlangeStandard.changeClassifier(EN1665)
-			hexHeadWithFlangeStandard.setParameters
+			G+[(bolt)-[:standard]->(:EN1665)]
 		}
 		case ISO4162: {
-			hexHeadWithFlangeStandard.changeClassifier(ISO4162)
-			hexHeadWithFlangeStandard.setParameters
+			G+[(bolt)-[:standard]->(:ISO4162)]
 		}
 		case ISO15071: {
-			hexHeadWithFlangeStandard.changeClassifier(ISO15071)
-			hexHeadWithFlangeStandard.setParameters
+			G+[(bolt)-[:standard]->(:ISO15071)]
 		}
 		default:
 			throw new IllegalArgumentException("standard not implemented.")
@@ -55,17 +48,18 @@ do {
 	val beta = Math.toRadians(25.0)
 	val tanBeta = tan(beta)
 
-	val dia = hexHeadWithFlangeStandard.dia
-	val P = hexHeadWithFlangeStandard.P
-	val b0 = hexHeadWithFlangeStandard.b0
-	val b1 = hexHeadWithFlangeStandard.b1
-	val b2 = hexHeadWithFlangeStandard.b2
-	val b3 = hexHeadWithFlangeStandard.b3
-	val c = hexHeadWithFlangeStandard.c
-	val dc = hexHeadWithFlangeStandard.dc
-	val kw = hexHeadWithFlangeStandard.kw
-	val r1 = hexHeadWithFlangeStandard.r1
-	val s = hexHeadWithFlangeStandard.s
+	bolt.setParameters(d)
+	val dia = bolt.dia
+	val P = bolt.P
+	val b0 = bolt.b0
+	val b1 = bolt.b1
+	val b2 = bolt.b2
+	val b3 = bolt.b3
+	val c = bolt.c
+	val dc = bolt.dc
+	val kw = bolt.kw
+	val r1 = bolt.r1
+	val s = bolt.s
 
 	var threadLimit = b0
 	if (length < b0) {
