@@ -1,0 +1,105 @@
+import standards.panheadscrew.ISO14583
+import standards.panheadscrew.ISO7045
+import standards.panheadscrew.PanHeadScrew
+import standards.panheadscrew.PanHeadStandardType
+import standards.thread.ThreadSize
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createPanHeadScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], makeThread:Boolean = true, standard:PanHeadStandardType = PanHeadStandardType.ISO7045)
+do {
+
+	// DEBUG vals
+//	val d = ThreadSize.M6
+//	val length = 8[mm]
+//	val standard = PanHeadStandardType.ISO14583
+	G+[
+		(bolt:PanHeadScrew)-[:head]->(panHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+	bolt.length = length
+
+	switch (standard) {
+		case ISO7045: {
+			G+[(bolt)-[:standard]->(:ISO7045)]
+		}
+		case ISO14583: {
+			G+[(bolt)-[:standard]->(:ISO14583)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	bolt.setParameters(d)
+
+	val dia = bolt.Dia
+	val P = bolt.P
+	val b = bolt.b
+	val k = bolt.k
+	val dk = bolt.dk
+	val r = bolt.r
+	val rf = bolt.rf
+	val isPartiallyThreaded = length - r > b
+
+	val beta = asin(dk / (2 * rf))
+	val tanBeta = tan(beta)
+	val alpha = beta / 2
+	val he = k - rf + (dk / 2) / tanBeta
+	val hArcX = rf * sin(alpha)
+	val hArcZ = k - rf + rf * cos(alpha)
+
+	var headGeo = workplane("XZ").sketch [
+        lineTo(0.0, k)
+        .threePointArc(#[hArcX, hArcZ], #[dk / 2.0, he])
+        .lineTo(dk / 2.0, 0.0)
+        .close
+//        lineTo(dia / 2.0 + r, 0.0)
+//        fillet(r)
+//        if (!makeThread && isPartiallyThreaded) {
+//            lineTo(dia / 2.0, -length + (length - b))
+//        }
+//        lineTo(dia / 2.0, -length)
+//        lineTo(0.0, -length)
+//        close
+	].revolve[axis = Z]
+
+	var recess = workplane
+	switch (bolt.recessType) {
+		case CROSS: {
+			val betaCr = asin(bolt.mH / (2 * bolt.rf))
+			val recessHeight = bolt.k - bolt.rf + (bolt.mH / 2.0) / tan(betaCr)
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createCrossRecess(bolt.cT.toString, bolt.mH).
+				translate(#[0, 0, recessHeight])
+		}
+		case HEXALOBULAR:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexalobularRecess("T"+bolt.torxCode, bolt.torxDepth, true).
+				translate(#[0, 0, - bolt.torxDepth + bolt.recessDirectOffset])
+	}
+	headGeo = headGeo.cut(recess)
+
+	val threadLength = if(isPartiallyThreaded) b else length - r
+//	if (makeThread) {
+//		val threadCutter = CreateBlindThreadCutter(dia, P, threadLength)
+//		threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
+//		screw = screw.cut(threadCutter)
+//	}
+	val shaftGeo = workplane("XZ").sketch [
+        lineTo(dia / 2.0 + r, 0.0)
+        .polarArc(180, r, 90)
+        .lineTo(dia / 2.0, -length + dia / 10.0)
+        .lineTo(dia * 0.4, -length)
+        .lineTo(0.0, -length)
+        .close
+    ].revolve[axis = Z]
+	show(headGeo.union(shaftGeo))
+
+	panHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, headGeo.union(shaftGeo)))
+}

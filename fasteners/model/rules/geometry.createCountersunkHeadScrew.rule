@@ -117,7 +117,6 @@ do {
         ].revolve[axis = Z]
 	}
 
-	show(headGeo.union(shaftGeo))
 	cskHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
 	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
 	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, headGeo.union(shaftGeo)))

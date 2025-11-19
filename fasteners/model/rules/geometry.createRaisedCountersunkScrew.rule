@@ -1,0 +1,111 @@
+import standards.raisedcountersunkheadscrew.ISO14584
+import standards.raisedcountersunkheadscrew.ISO2010
+import standards.raisedcountersunkheadscrew.ISO7047
+import standards.raisedcountersunkheadscrew.RaisedCountersunkHeadScrew
+import standards.raisedcountersunkheadscrew.RaisedCountersunkStandardType
+import standards.thread.ThreadSize
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createRaisedCountersunkScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], makeThread:Boolean = true, standard:RaisedCountersunkStandardType = RaisedCountersunkStandardType.ISO2010)
+do {
+
+	// DEBUG vals
+//	val d = ThreadSize.M6
+//	val length = 8[mm]
+//	val standard = RaisedCountersunkStandardType.ISO14584
+	G+[
+		(bolt:RaisedCountersunkHeadScrew)-[:head]->(cskHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+	bolt.length = length
+
+	switch (standard) {
+		case ISO2010: {
+			G+[(bolt)-[:standard]->(:ISO2010)]
+		}
+		case ISO7047: {
+			G+[(bolt)-[:standard]->(:ISO7047)]
+		}
+		case ISO14584: {
+			G+[(bolt)-[:standard]->(:ISO14584)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	bolt.setParameters(d)
+
+	val dia = bolt.Dia
+	val P = bolt.P
+	val b = bolt.b
+	val dkTheo = bolt.dkTheo
+	val dkMean = bolt.dkMean
+	val r = bolt.r
+	val rf = bolt.rf
+	val cskAngle = bolt.countersinkAngle
+
+	val headFlatHeight = (dkTheo - dkMean) / (2 * tan(cskAngle / 2))
+	val sharpCornerHeight = -1 * (headFlatHeight + (dkMean - dia) / (2 * tan(cskAngle / 2)))
+	val filletStart = sharpCornerHeight - r * tan(cskAngle / 4)
+	val actualThreadLength = if(length + filletStart > b) b else length + filletStart
+
+	val headArcAngle = asin(dkMean / (2 * rf))
+	val crownHeight = if (standard == RaisedCountersunkStandardType.ISO14584) {
+			rf - sqrt(rf * rf - (bolt.A * bolt.A) / 4.0) + bolt.f
+		} else {
+			rf - (dkMean / 2.0) / tan(headArcAngle)
+		}
+
+	var headGeo = workplane("XZ").sketch [
+		lineTo(0, filletStart)
+        .lineTo(dia / 2.0, filletStart)
+        .polarArc(90, r, -(cskAngle / 2))
+        .lineTo(dkMean / 2.0, -headFlatHeight)
+        .lineTo(dkMean / 2.0, 0.0)
+		.threePointArc(#[rf * sin(headArcAngle / 2), crownHeight + rf * (cos(headArcAngle / 2) - 1)], #[ 0.0, crownHeight])
+		.close
+    ].revolve[axis = Z]
+
+	var recess = workplane
+	switch (bolt.recessType) {
+		case SLOT:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createSlotRecess(bolt.nMin, bolt.recessDepth, dkTheo).
+				translate(#[0, 0, crownHeight])
+		case CROSS:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createCrossRecess(bolt.cT.toString, bolt.mH).
+				translate(#[0, 0, crownHeight])
+		case HEXALOBULAR:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexalobularRecess("T"+bolt.torxCode, bolt.recessDepth, true).
+				translate(#[0, 0, -  bolt.recessDepth + bolt.f])
+		default: {
+			throw new IllegalArgumentException("Recess type not implemented.")
+		}
+	}
+	headGeo = headGeo.cut(recess)
+
+//    if (makeThread) {
+//        val threadCutter = CreateBlindThreadCutter(dia, P, actualThreadLength)
+//        threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - actualThreadLength)))
+//        screw = screw.cut(threadCutter)
+//    }
+	val shaftGeo = workplane("XZ").sketch [
+		moveTo(0, filletStart)
+        .lineTo(0.0, -length)
+        .lineTo(dia / 2.0, -length)
+        .lineTo(dia / 2.0, filletStart)
+        .close
+    ].revolve[axis = Z]
+
+	show(headGeo.union(shaftGeo))
+
+	cskHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, headGeo.union(shaftGeo)))
+}
