@@ -1,0 +1,84 @@
+import standards.buttonheadscrewithflange.FlangedButtonHeadScrew
+import standards.buttonheadscrewithflange.FlangedButtonHeadStandardType
+import standards.buttonheadscrewithflange.ISO7380_2
+import standards.thread.ThreadSize
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createButtonHeadScrewWithFlange(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], standard:FlangedButtonHeadStandardType = FlangedButtonHeadStandardType.ISO7380_2)
+do {
+	G+[
+		(bolt:FlangedButtonHeadScrew)-[:head]->(buttonHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+//	val d = ThreadSize.M6
+//	val length = 25[mm]
+//	val standard = FlangedButtonHeadStandardType.ISO7380_2
+	bolt.length = length
+
+	switch (standard) {
+		case ISO7380_2: {
+			G+[(bolt)-[:standard]->(:ISO7380_2)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	bolt.setParameters(d)
+
+	val dia = bolt.Dia
+	val P = bolt.P
+	val b = bolt.b
+	val c = bolt.c
+	val dk = bolt.dk
+	val dkCollar = bolt.dkCollar
+	val sMean = bolt.sMean
+	val tMin = bolt.tMin
+	val r = bolt.r
+	val k = bolt.k
+
+	val sqrt3 = sqrt(3)
+	val eCham = 2.0 * sMean / sqrt3 * 1.005
+	val ak = -(4 * (k - c) * (k - c) + eCham * eCham - dk * dk) / (8 * (k - c))
+	val rHead = sqrt((dk / 2.0) * (dk / 2.0) + ak * ak)
+	val alpha = (atan(2 * (k - c + ak) / eCham) + atan((2 * ak) / dk)) / 2
+
+	var headGeo = workplane("XZ").sketch [
+        lineTo(0, k)
+        .hLine(eCham / 2.0)
+        .threePointArc(#[rHead * cos(alpha), c - ak + rHead * sin(alpha)], #[dk / 2.0, c])
+        .lineTo((dkCollar - c) / 2.0, c)
+        .tangentArc(c / 2.0, -180)
+        .close
+    ].revolve[axis = Z]
+
+	val recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(sMean, tMin, true).translate(
+		#[0, 0, k - tMin])
+	headGeo = headGeo.cut(recess)
+
+	val threadLength = if(length - r > b) b else length - r
+//	if (makeThread) {
+//		val threadCutter = CreateBlindThreadCutter(dia, P, threadLength)
+//		threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
+//		screw = screw.cut(threadCutter)
+//	}
+	val shaftGeo = workplane("XZ").sketch [
+        lineTo(dia / 2.0 + r, 0.0)
+        .polarArc(180, r, 90)
+        .lineTo(dia / 2.0, -length + dia / 10.0)
+        .lineTo(dia * 0.4, -length)
+        .lineTo(0.0, -length)
+        .close
+    ].revolve[axis = Z]
+
+	buttonHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, headGeo.union(shaftGeo)))
+}
+

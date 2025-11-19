@@ -18,7 +18,7 @@ class Drive {
 }
 
 enum RecessType {
-	HEX, HEXALOBULAR, CROSS
+	HEX, HEXALOBULAR, CROSS, SLOT
 }
 
 class BoltShaft {

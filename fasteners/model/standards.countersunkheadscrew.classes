@@ -1,0 +1,220 @@
+package standards.countersunkheadscrew
+
+import topology.Standard
+import standards.thread.ThreadSize
+import topology.Bolt
+import topology.RecessType
+
+interface CountersunkStandard extends Standard {
+
+	op getRecessType() : RecessType
+
+	op getCountersinkAngle() : Unit[deg]
+
+	op isChamferedEnd() : Boolean
+}
+
+class CountersunkHeadScrew extends Bolt {
+	CountersunkStandard standard
+	thread           : ThreadSize
+	length           : Unit[mm]
+	Dia              : Unit[mm]
+	countersinkAngle : Unit[deg]
+	chamferedEnd     : Boolean
+	recessType       : RecessType
+
+	P                : Unit[mm]
+	a                : Unit[mm]
+	b                : Unit[mm]
+	dkTheo           : Unit[mm]
+	dkMean           : Unit[mm]
+	headHeight       : Unit[mm]
+	nMin             : Unit[mm]
+	r                : Unit[mm]
+	sMean            : Unit[mm]
+	recessDepth      : Unit[mm]
+	torxCode         : Integer
+	crossTip         : Integer
+	crossDepth       : Unit[mm]
+	Ac               : Unit[mm]
+
+	op setParameters(d:ThreadSize) {
+		if (standard === null) {
+			throw new IllegalStateException("standard not set")
+		}
+		thread = d
+		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
+		countersinkAngle = standard.countersinkAngle
+		chamferedEnd = standard.chamferedEnd
+		recessType = standard.recessType
+		val parameters = standard.getParameters.get(thread)
+		if (parameters === null) {
+			throw new IllegalArgumentException("Thread size not supported for " + standard.class.simpleName)
+		}
+		P = parameters.get(0) * 1[mm]
+		a = parameters.get(1) * 1[mm]
+		b = parameters.get(2) * 1[mm]
+		dkTheo = parameters.get(3) * 1[mm]
+		dkMean = parameters.get(4) * 1[mm]
+		headHeight = parameters.get(5) * 1[mm]
+		nMin = parameters.get(6) * 1[mm]
+		r = parameters.get(7) * 1[mm]
+		sMean = parameters.get(8) * 1[mm]
+		recessDepth = parameters.get(9) * 1[mm]
+		torxCode = parameters.get(10).intValue
+		crossTip = parameters.get(11).intValue
+		crossDepth = parameters.get(12) * 1[mm]
+		Ac = parameters.get(13) * 1[mm]
+	}
+}
+
+enum CountersunkStandardType {
+	ISO10642, ISO2009, ISO7046, ISO14581, ISO14582
+}
+
+class ISO10642 extends CountersunkStandard {
+
+	op getRecessType() : RecessType {
+		return RecessType.HEX
+	}
+
+	op getCountersinkAngle() : Unit[deg] {
+		return 90[deg]
+	}
+
+	op isChamferedEnd() : Boolean {
+		return true
+	}
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
+		paramMap.put(ThreadSize.M2, #{0.4, 0.0, 16.0, 4.09, 3.9, 1.24, 0.0, 0.1, 1.34, 0.8, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M2_5, #{0.45, 0.0, 25.0, 5.08, 4.9, 1.55, 0.0, 0.1, 1.54, 1.08, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M3, #{0.5, 0.0, 18.0, 6.72, 6.0, 1.86, 0.0, 0.1, 2.06, 1.1, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M4, #{0.7, 0.0, 20.0, 8.96, 8.0, 2.48, 0.0, 0.2, 2.56, 1.5, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M5, #{0.8, 0.0, 22.0, 11.2, 10.0, 3.1, 0.0, 0.2, 3.06, 1.9, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 0.0, 24.0, 13.44, 12.0, 3.72, 0.0, 0.25, 4.06, 2.2, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 0.0, 28.0, 17.92, 16.0, 4.96, 0.0, 0.4, 5.06, 3.0, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 0.0, 32.0, 22.4, 20.5, 6.2, 0.0, 0.4, 6.06, 3.6, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M12, #{1.75, 0.0, 36.0, 26.88, 25.0, 7.44, 0.0, 0.6, 8.07, 4.3, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M14, #{2.0, 0.0, 40.0, 30.8, 28.4, 8.4, 0.0, 0.6, 10.07, 4.5, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M16, #{2.0, 0.0, 44.0, 33.6, 31.0, 8.8, 0.0, 0.6, 10.07, 4.8, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M20, #{2.5, 0.0, 52.0, 40.32, 38.0, 10.16, 0.0, 0.8, 12.1, 5.6, 0.0, 0.0, 0.0, 0.0})
+		return paramMap
+	}
+}
+
+class ISO2009 extends CountersunkStandard {
+
+	op getRecessType() : RecessType {
+		return RecessType.SLOT
+	}
+
+	op getCountersinkAngle() : Unit[deg] {
+		return 90[deg]
+	}
+
+	op isChamferedEnd() : Boolean {
+		return false
+	}
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
+		paramMap.put(ThreadSize.M1_6, #{0.35, 0.7, 25.0, 3.6, 2.8, 1.0, 0.46, 0.2, 0.0, 0.4, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M2, #{0.4, 0.8, 25.0, 4.4, 3.6, 1.2, 0.56, 0.3, 0.0, 0.5, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M2_5, #{0.45, 0.9, 25.0, 5.5, 4.5, 1.5, 0.66, 0.3, 0.0, 0.6, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M3, #{0.5, 1.0, 25.0, 6.3, 5.3, 1.65, 0.86, 0.4, 0.0, 0.7, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M3_5, #{0.6, 1.2, 38.0, 8.2, 7.1, 2.35, 1.06, 0.4, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M4, #{0.7, 1.4, 38.0, 9.4, 8.2, 2.7, 1.26, 0.5, 0.0, 1.1, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M5, #{0.8, 1.6, 38.0, 10.4, 9.2, 2.7, 1.26, 0.6, 0.0, 1.2, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 2.0, 38.0, 12.6, 11.2, 3.3, 1.66, 0.7, 0.0, 1.4, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 2.5, 38.0, 17.3, 15.6, 4.65, 2.06, 1.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 38.0, 20.0, 18.1, 5.0, 2.56, 1.2, 0.0, 2.3, 0.0, 0.0, 0.0, 0.0})
+		return paramMap
+	}
+}
+
+class ISO7046 extends CountersunkStandard {
+
+	op getRecessType() : RecessType {
+		return RecessType.CROSS
+	}
+
+	op getCountersinkAngle() : Unit[deg] {
+		return 90[deg]
+	}
+
+	op isChamferedEnd() : Boolean {
+		return false
+	}
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
+		paramMap.put(ThreadSize.M1_6, #{0.35, 0.7, 25.0, 3.6, 2.8, 1.0, 0.46, 0.2, 0.0, 0.4, 0.0, 0.0, 1.6, 0.0})
+		paramMap.put(ThreadSize.M2, #{0.4, 0.8, 25.0, 4.4, 3.6, 1.2, 0.56, 0.3, 0.0, 0.5, 0.0, 0.0, 1.9, 0.0})
+		paramMap.put(ThreadSize.M2_5, #{0.45, 0.9, 25.0, 5.5, 4.5, 1.5, 0.66, 0.3, 0.0, 0.6, 0.0, 1.0, 2.9, 0.0})
+		paramMap.put(ThreadSize.M3, #{0.5, 1.0, 25.0, 6.3, 5.3, 1.65, 0.86, 0.4, 0.0, 0.7, 0.0, 1.0, 3.2, 0.0})
+		paramMap.put(ThreadSize.M3_5, #{0.6, 1.2, 38.0, 8.2, 7.1, 2.35, 1.06, 0.4, 0.0, 1.0, 0.0, 2.0, 4.4, 0.0})
+		paramMap.put(ThreadSize.M4, #{0.7, 1.4, 38.0, 9.4, 8.2, 2.7, 1.26, 0.5, 0.0, 1.1, 0.0, 2.0, 4.6, 0.0})
+		paramMap.put(ThreadSize.M5, #{0.8, 1.6, 38.0, 10.4, 9.2, 2.7, 1.26, 0.6, 0.0, 1.2, 0.0, 2.0, 5.2, 0.0})
+		paramMap.put(ThreadSize.M6, #{1.0, 2.0, 38.0, 12.6, 11.2, 3.3, 1.66, 0.7, 0.0, 1.4, 0.0, 3.0, 6.8, 0.0})
+		paramMap.put(ThreadSize.M8, #{1.25, 2.5, 38.0, 17.3, 15.6, 4.65, 2.06, 1.0, 0.0, 2.0, 0.0, 4.0, 8.9, 0.0})
+		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 38.0, 20.0, 18.1, 5.0, 2.56, 1.2, 0.0, 2.3, 0.0, 4.0, 10.0, 0.0})
+		return paramMap
+	}
+}
+
+class ISO14581 extends CountersunkStandard {
+
+	op getRecessType() : RecessType {
+		return RecessType.HEXALOBULAR
+	}
+
+	op getCountersinkAngle() : Unit[deg] {
+		return 90[deg]
+	}
+
+	op isChamferedEnd() : Boolean {
+		return true
+	}
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
+		paramMap.put(ThreadSize.M2, #{0.4, 0.8, 16.0, 4.4, 3.8, 1.2, 0.0, 0.1, 0.0, 0.64, 6.0, 0.0, 0.0, 1.75})
+		paramMap.put(ThreadSize.M2_5, #{0.45, 0.9, 17.0, 5.5, 4.7, 1.6, 0.0, 0.1, 0.0, 0.79, 8.0, 0.0, 0.0, 2.4})
+		paramMap.put(ThreadSize.M3, #{0.5, 1.0, 18.0, 6.3, 5.5, 2.2, 0.0, 0.1, 0.0, 0.83, 10.0, 0.0, 0.0, 2.8})
+		paramMap.put(ThreadSize.M3_5, #{0.6, 1.2, 18.0, 8.2, 7.3, 2.6, 0.0, 0.1, 0.0, 1.32, 10.0, 0.0, 0.0, 3.35})
+		paramMap.put(ThreadSize.M4, #{0.7, 1.4, 20.0, 9.4, 8.4, 3.01, 0.0, 0.2, 0.0, 1.53, 20.0, 0.0, 0.0, 3.95})
+		paramMap.put(ThreadSize.M5, #{0.8, 2.0, 22.0, 10.4, 9.3, 3.5, 0.0, 0.2, 0.0, 1.51, 25.0, 0.0, 0.0, 4.5})
+		paramMap.put(ThreadSize.M6, #{1.0, 2.5, 24.0, 12.6, 11.3, 4.22, 0.0, 0.25, 0.0, 1.78, 30.0, 0.0, 0.0, 5.6})
+		paramMap.put(ThreadSize.M8, #{1.25, 3.13, 28.0, 17.3, 15.8, 5.69, 0.0, 0.4, 0.0, 2.54, 45.0, 0.0, 0.0, 7.95})
+		paramMap.put(ThreadSize.M10, #{1.5, 3.75, 32.0, 20.0, 18.3, 6.5, 0.0, 0.4, 0.0, 2.8, 50.0, 0.0, 0.0, 8.95})
+		return paramMap
+	}
+}
+
+class ISO14582 extends CountersunkStandard {
+
+	op getRecessType() : RecessType {
+		return RecessType.HEXALOBULAR
+	}
+
+	op getCountersinkAngle() : Unit[deg] {
+		return 90[deg]
+	}
+
+	op isChamferedEnd() : Boolean {
+		return true
+	}
+
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val Map<ThreadSize, List<Double>> paramMap = map
+		paramMap.put(ThreadSize.M3, #{0.5, 1.0, 18.0, 7.4, 6.5, 2.2, 0.0, 0.1, 0.0, 1.1, 10.0, 0.0, 0.0, 2.8})
+		paramMap.put(ThreadSize.M4, #{0.7, 1.4, 20.0, 10.02, 9.0, 3.01, 0.0, 0.2, 0.0, 1.6, 20.0, 0.0, 0.0, 3.95})
+		paramMap.put(ThreadSize.M5, #{0.8, 1.6, 22.0, 12.0, 10.8, 3.5, 0.0, 0.2, 0.0, 1.8, 25.0, 0.0, 0.0, 4.5})
+		paramMap.put(ThreadSize.M6, #{1.0, 2.0, 24.0, 14.44, 13.1, 4.22, 0.0, 0.25, 0.0, 2.2, 30.0, 0.0, 0.0, 5.6})
+		paramMap.put(ThreadSize.M8, #{1.25, 2.5, 28.0, 19.38, 17.8, 5.69, 0.0, 0.4, 0.0, 2.8, 45.0, 0.0, 0.0, 7.93})
+		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 32.0, 23.0, 21.1, 6.5, 0.0, 0.4, 0.0, 3.3, 50.0, 0.0, 0.0, 8.95})
+		return paramMap
+	}
+}

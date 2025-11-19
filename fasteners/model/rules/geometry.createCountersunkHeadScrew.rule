@@ -1,0 +1,125 @@
+import standards.countersunkheadscrew.CountersunkHeadScrew
+import standards.countersunkheadscrew.CountersunkStandardType
+import standards.countersunkheadscrew.ISO10642
+import standards.countersunkheadscrew.ISO14581
+import standards.countersunkheadscrew.ISO14582
+import standards.countersunkheadscrew.ISO2009
+import standards.countersunkheadscrew.ISO7046
+import standards.thread.ThreadSize
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createCountersunkHeadScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], standard:CountersunkStandardType = CountersunkStandardType.ISO10642)
+do {
+
+	// DEBUG vals
+//	val d = ThreadSize.M6
+//	val length = 8[mm]
+//	val standard = CountersunkStandardType.ISO10642
+	G+[
+		(bolt:CountersunkHeadScrew)-[:head]->(cskHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+	bolt.length = length
+
+	switch (standard) {
+		case ISO10642: {
+			G+[(bolt)-[:standard]->(:ISO10642)]
+		}
+		case ISO2009: {
+			G+[(bolt)-[:standard]->(:ISO2009)]
+		}
+		case ISO7046: {
+			G+[(bolt)-[:standard]->(:ISO7046)]
+		}
+		case ISO14581: {
+			G+[(bolt)-[:standard]->(:ISO14581)]
+		}
+		case ISO14582: {
+			G+[(bolt)-[:standard]->(:ISO14582)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	bolt.setParameters(d)
+
+	val dia = bolt.Dia
+	val P = bolt.P
+	val b = bolt.b
+	val dkTheo = bolt.dkTheo
+	val dkMean = bolt.dkMean
+	val r = bolt.r
+	val cskAngle = bolt.countersinkAngle
+	val chamferedEnd = bolt.chamferedEnd
+	val t = bolt.recessDepth
+	val sMean = bolt.sMean
+
+	val headFlatHeight = (dkTheo - dkMean) / (2 * tan(cskAngle / 2))
+	val sharpCornerHeight = -1 * (headFlatHeight + (dkMean - dia) / (2 * tan(cskAngle / 2)))
+	val filletStart = sharpCornerHeight - r * tan(cskAngle / 4)
+	val threadLength = if(length + filletStart > b) b else length + filletStart
+
+	var headGeo = workplane("XZ").sketch [
+		 lineTo(0, filletStart)
+        .lineTo(dia / 2.0, filletStart)
+        .polarArc(90, r, -(cskAngle / 2))
+        .lineTo(dkMean / 2.0, -headFlatHeight)
+        .lineTo(dkMean / 2.0, 0.0)
+        .close
+    ].revolve[axis = Z]
+
+	var recess = workplane
+
+	switch (bolt.recessType) {
+		case HEX:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(sMean, t, true).translate(
+				#[0, 0, - t]) // makeHexRecess(bolt.sMean, bolt.recessDepth, true)
+		case SLOT:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createSlotRecess(bolt.nMin, bolt.recessDepth, dkTheo) // TODO implement SLOT Recess makeSlotRecess(v)
+		case CROSS:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createCrossRecess(bolt.crossTip.toString, bolt.crossDepth) // TODO implement CROSS Recess makeHCrossRecess(bolt.crossTip, bolt.crossDepth)
+		case HEXALOBULAR:
+			recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexalobularRecess("T"+bolt.torxCode, t, true).
+				translate(#[0, 0, - t]) // makeHexalobularRecess("T" + bolt.torxCode, bolt.recessDepth, false)
+	}
+
+	headGeo = headGeo.cut(recess)
+
+//    if (makeThread) {
+//        val threadCutter = CreateBlindThreadCutter(dia, P, threadLength)
+//        threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
+//        screw = screw.cut(threadCutter)
+//    }
+	var shaftGeo = workplane
+	if (chamferedEnd) {
+		shaftGeo = workplane("XZ").sketch [
+		moveTo(0, filletStart)
+        .lineTo(0.0, -length)
+        .lineTo(dia * 0.4, -length)
+        .lineTo(dia / 2.0, -length + dia / 10.0)
+        .lineTo(dia / 2.0, filletStart)
+        .close
+	    ].revolve[axis = Z]
+	} else {
+		shaftGeo = workplane("XZ").sketch [
+		moveTo(0, filletStart)
+        .lineTo(0.0, -length)
+        .lineTo(dia / 2.0, -length)
+        .lineTo(dia / 2.0, filletStart)
+        .close
+        ].revolve[axis = Z]
+	}
+
+	show(headGeo.union(shaftGeo))
+	cskHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, headGeo.union(shaftGeo)))
+}
+

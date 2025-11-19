@@ -99,80 +99,81 @@ op createHexalobularRecess(driveSize:String, depth:Double, chamfer :boolean) : W
 }
 
 op createSlotRecess(width : Double, depth: Double, headDiameter : Double) : Workplane {
-	
+	val slotGeo = workplane.box(headDiameter+10.0,width, depth*2)
+	return slotGeo
 }
 
-op createCrossRecess(crossType : String, width : Double) : Workplane {
-	/*
-	 * """Create a Cross recess of type H.
-        Oriented in the Z direction , with outer diameter m at Z=0.
-        Parameters:
-        - CrossType: "0", "1", "2", "3", and "4" are supported.
-        - m: Functional outer diameter of the recess.
-             This also affects the overall height of the resulting shape.
-        """
-        b, e_mean, g, f_mean, r, t1, alpha, beta = FsData["iso4757def"][CrossType]
+op createCrossRecess(crossType : String, m : Double) : Workplane {
+	val sizeMap = map
+//	"Size","b","e_min","g","f_mean","r","t1","alpha","beta" })
+	sizeMap.put("0", #{0.61, 0.26, 0.81, 0.34, 0.3, 0.22, 138.0, 7.0})
+	sizeMap.put("1", #{0.97, 0.41, 1.27, 0.54, 0.5, 0.34, 138.0, 7.0})
+	sizeMap.put("2", #{1.47, 0.79, 2.29, 0.7, 0.6, 0.61, 140.0, 5.75})
+	sizeMap.put("3", #{2.41, 1.98, 3.81, 0.83, 0.8, 1.01, 146.0, 5.75})
+	sizeMap.put("4", #{3.48, 2.39, 5.08, 1.23, 1.0, 1.35, 153.0, 7.0})
 
-        rad265 = math.radians(26.5)
-        rad28 = math.radians(28.0)
-        tg = (m - g) / 2.0 / math.tan(rad265)  # depth at radius of g
-        t_tot = tg + g / 2.0 * math.tan(rad28)  # total depth
+	val params = sizeMap.get(crossType)
+	val b = params.get(0)
+	val e_mean = params.get(1)
+	val g = params.get(2)
+	val f_mean = params.get(3)
+	val r = params.get(4)
+	val t1 = params.get(5)
+	val alpha = params.get(6)
+	val beta = params.get(7)
 
-        hm = m / 4.0
-        hmc = m / 2.0
-        rmax = m / 2.0 + hm * math.tan(rad265)
+	val rad265 = Math.toRadians(26.5)
+	val rad28 = Math.toRadians(28.0)
+	val tg = (m - g) / 2.0 / tan(rad265) // depth at radius of g
+	val t_tot = tg + g / 2.0 * tan(rad28) // total depth
+	val hm = m / 4.0
+	val hmc = m / 2.0
+	val rmax = m / 2.0 + hm * tan(rad265)
 
-        fm = FSFaceMaker()
-        fm.AddPoints((0.0, hm), (rmax, hm), (g / 2.0, -tg), (0.0, -t_tot))
-        aFace = fm.GetFace()
-        cross = cls.RevolveZ(aFace)
+	var crossGeo = workplane("XZ").sketch [
+     	lineTo(0, hm).lineTo(rmax, hm).lineTo(g/2, -tg).lineTo(0, -t_tot).close
+     ].revolve[axis = Z]
 
-        # we need to cut 4 corners out of the above shape.
-        # Definition of corner:
-        # The angles 92 degrees and alpha are defined on a plane which has
-        # an angle of beta against our coordinate system.
-        # The projected angles are needed for easier calculation!
-        rad_alpha = math.radians(alpha / 2.0)
-        rad92 = math.radians(92.0 / 2.0)
-        rad_beta = math.radians(beta)
+	val rad_alpha = Math.toRadians(alpha / 2.0)
+	val rad92 = Math.toRadians(92.0 / 2.0)
+	val rad_beta = Math.toRadians(beta)
 
-        rad_alpha_p = math.atan(math.tan(rad_alpha) / math.cos(rad_beta))
-        rad92_p = math.atan(math.tan(rad92) / math.cos(rad_beta))
+	val rad_alpha_p = atan(tan(rad_alpha) / cos(rad_beta))
+	val rad92_p = atan(tan(rad92) / cos(rad_beta))
 
-        tb = tg + (g - b) / 2.0 * math.tan(rad28)  # depth at dimension b
-        # radius of b-corner at hm
-        rbtop = b / 2.0 + (hmc + tb) * math.tan(rad_beta)
-        # radius of b-corner at t_tot
-        rbtot = b / 2.0 - (t_tot - tb) * math.tan(rad_beta)
+	val tb = tg + (g - b) / 2.0 * tan(rad28) // depth at dimension b
+//       radius of b-corner at hm
+	val rbtop = b / 2.0 + (hmc + tb) * tan(rad_beta)
+	// radius of b-corner at t_tot
+	val rbtot = b / 2.0 - (t_tot - tb) * tan(rad_beta)
 
-        # delta between corner b and corner e in x direction
-        dre = e_mean / 2.0 / math.tan(rad_alpha_p)
+	// delta between corner b and corner e in x direction
+	val dre = e_mean / 2.0 / tan(rad_alpha_p)
 
-        dx = m / 2.0 * math.cos(rad92_p)
-        dy = m / 2.0 * math.sin(rad92_p)
+	val dx = m / 2.0 * cos(rad92_p)
+	val dy = m / 2.0 * sin(rad92_p)
 
-        PntC0 = Base.Vector(rbtop, 0.0, hmc)
-        PntC1 = Base.Vector(rbtot, 0.0, -t_tot)
-        PntC3 = Base.Vector(rbtot + dre, +e_mean / 2.0, -t_tot)
-        PntC5 = Base.Vector(rbtot + dre, -e_mean / 2.0, -t_tot)
-        PntC7 = Base.Vector(rbtot + dre + 2.0 * dx, +e_mean + 2.0 * dy, -t_tot)
-        PntC9 = Base.Vector(rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy, -t_tot)
+	val PntC0 = #[rbtop, 0.0, hmc]
+	val PntC1 = #[rbtot, 0.0, -t_tot]
+	val PntC3 = #[rbtot + dre, e_mean / 2.0, -t_tot]
+	val PntC5 = #[rbtot + dre, -e_mean / 2.0, -t_tot]
+	val PntC7 = #[rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy, -t_tot]
+	val PntC9 = #[rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy, -t_tot]
 
-        wire_t_tot = Part.makePolygon(
-            [PntC1, PntC3, PntC7, PntC9, PntC5, PntC1])
-        edgeC1 = Part.makeLine(PntC0, PntC1)
-        makeSolid = True
-        isFrenet = False
-        corner = Part.Wire(edgeC1).makePipeShell(
-            [wire_t_tot], makeSolid, isFrenet)
-        for i in range(4):
-            cross = cross.cut(
-                corner.rotated(
-                    Base.Vector(0, 0, 0),
-                    Base.Vector(0, 0, 1),
-                    90 * i
-                )
-            )
-        return Part.Solid(cross)
-	 */
+	var crossEdgeGeo = workplane(plane[origin = #[0, 0, -t_tot]]).sketch [
+    	moveTo(rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy)
+    	.lineTo(rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy)
+    	.lineTo(rbtot + dre, -e_mean / 2.0)
+    	.lineTo(rbtot, 0.0)
+    	.lineTo(rbtot + dre, e_mean / 2.0)
+    	.close
+    ].extrude(1, [direction = PntC0.subtract(PntC1)])
+
+	for (var i = 0; i <= 4; i++) {
+		val rotCount = i
+		crossGeo = crossGeo.cut(crossEdgeGeo.rotate[angle = rotCount * 90[deg] axis = #[0, 0, 1]])
+	}
+     
+
+	return crossGeo
 }

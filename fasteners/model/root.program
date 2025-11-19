@@ -1,7 +1,10 @@
 program root {
 //rule importCsv
+rule geometry.createCountersunkHeadScrew
+	rule geometry.createButtonHeadScrewWithFlange
+	rule geometry.createButtonHeadScrew
 //	rule geometry.createHexHeadBoltWithFlange
-	rule geometry.createCylinderHeadBolt
+//	rule geometry.createCylinderHeadBolt
 //	rule geometry.createHexHeadBolt
 //	rule test
 }

@@ -198,7 +198,7 @@ class ISO14579 extends CylinderHeadHexalobularRecessStandard {
 			6.0, 140.0, 96.0, 71.0, 63.54, 52.54, 5.95, 64.0, 2.0, 46.15, 38.0, 6.4, 94.26, 22.0})
 		return paramMap
 	}
-	@Override
+	
 	op setDriveSize(thread:ThreadSize) {
 		val sizeMap = map
 //		"Dia","DriveSize /TX","A","t_mean"
@@ -215,7 +215,6 @@ class ISO14579 extends CylinderHeadHexalobularRecessStandard {
 		sizeMap.put(ThreadSize.M16, "T70")
 		sizeMap.put(ThreadSize.M18, "T80")
 		sizeMap.put(ThreadSize.M20, "T90")
-
 		driveSize = sizeMap.get(thread)
 	}                                         
 	

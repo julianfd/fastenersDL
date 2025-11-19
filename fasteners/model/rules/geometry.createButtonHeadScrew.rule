@@ -1,0 +1,85 @@
+import standards.buttonheadscrew.ButtonHeadScrew
+import standards.buttonheadscrew.ButtonHeadStandardType
+import standards.buttonheadscrew.ISO7380_1
+import standards.thread.ThreadSize
+import topology.BoltHead
+import topology.BoltShaft
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createButtonHeadScrew //(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], standard:ButtonHeadStandardType = ButtonHeadStandardType.ISO7380_1)
+do {
+	G+[
+		(bolt:ButtonHeadScrew)-[:head]->(buttonHead:BoltHead)
+		(bolt)-[:shaft]->(boltShaft:BoltShaft)
+	]
+
+	val d = ThreadSize.M6
+	val length = 25[mm]
+	val standard = ButtonHeadStandardType.ISO7380_1
+
+	bolt.length = length
+
+	switch (standard) {
+		case ISO7380_1: {
+			G+[(bolt)-[:standard]->(:ISO7380_1)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	bolt.setParameters(d)
+	val dia = bolt.Dia
+	val P = bolt.P
+	val b = bolt.b
+	val dk = bolt.dk
+	val sMean = bolt.sMean
+	val tMin = bolt.tMin
+	val r = bolt.r
+	val k = bolt.k
+
+	val sqrt3 = sqrt(3)
+	val eCham = 2.0 * sMean / sqrt3 * 1.005
+	val ak = -(4 * k**2 + eCham**2 - dk**2) / (8 * k)
+	val rHead = sqrt((dk / 2.0)**2 + ak**2)
+	val alpha = (atan(2 * (k + ak) / eCham) + atan((2 * ak) / dk)) / 2
+
+	val profile = workplane("XZ").sketch [
+        moveTo(0, 0)
+        .lineTo(0, k)
+        .hLine(eCham / 2.0)
+        .threePointArc(#[rHead * cos(alpha), -ak + rHead * sin(alpha)], #[dk / 2.0, 0.0])
+        .lineTo(dia / 2.0 + r, 0.0)
+        .close
+    ]
+
+	val headSolid = profile.revolve[axis = Z]
+
+	val recess = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(sMean, tMin, true).translate(
+		#[0, 0, k - tMin])
+	var screw = headSolid.cut(recess)
+
+	val threadLength = if(length - r > b) b else length - r
+//	if (makeThread) {
+//		val threadCutter = CreateBlindThreadCutter(dia, P, threadLength)
+//		threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
+//		screw = screw.cut(threadCutter)
+//	}
+	val shaftProfile = workplane("XZ").sketch [
+        lineTo(dia / 2.0 + r, 0.0)
+        .polarArc(180, r, 90)
+        .lineTo(dia / 2.0, -length + dia / 10.0)
+        .lineTo(dia * 0.4, -length)
+        .lineTo(0.0, -length)
+        .close
+    ]
+
+	val shaft = shaftProfile.revolve[axis = Z]
+
+	buttonHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headSolid))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaft))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, screw.union(shaft)))
+}

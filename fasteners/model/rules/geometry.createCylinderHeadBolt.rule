@@ -74,7 +74,6 @@ do {
 	var headGeo = workplane("XZ").sketch [ moveTo(0, 0).lineTo(0, k).lineTo((dk_max/2)-v, k).tangentArc(v, -90).lineTo(dk_max/2, (dk_max -dw)/2)
 		.lineTo(dw/2, 0).close].revolve[axis = Z]
 
-	print(s_mean + " " + t)
 	var recessGeo = workplane
 	if (recess.equals(RecessType.HEX)) {
 		recessGeo = rule fasteners.rules.geometry.GeometryUtil.op.createHexagonRecess(s_mean, t, true).translate(

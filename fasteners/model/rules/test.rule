@@ -26,47 +26,127 @@ do {
 //	}
 //	show(recess)
 	// hexalobular recess
-	val params = #{6.75, 4.76, 0.56}
-	val driveSize = "T40"
-	val A = params.get(0)
-	val B = params.get(1)
-	val Re = params.get(2)
-	val width = sqrt(3) * A / 2
-	val depth = 5.06
-
-	val Ri = -((B + sqrt(3) * (2.0 * Re - A)) * B + (A - 4.0 * Re) * A) / (4.0 * B - 2.0 * sqrt(3) * A + (4.0 * sqrt(
-		3) - 8.0) * Re)
-	val beta = Math.acos(A / (4 * Ri + 4 * Re) - (2 * Re) / (4 * Ri + 4 * Re)) - pi / 6
-	val Re_x = A / 2.0 - Re + Re * Math.sin(beta)
-	val Re_y = Re * Math.cos(beta)
-	val Ri_y = B / 4.0
-	val Ri_x = sqrt(3) * B / 4.0
-
-	val sketchDef = workplane.sketch [moveTo(Re_x, -Re_y).threePointArc(#[A / 2, 0.0], #[Re_x, Re_y])
-		.threePointArc(#[Ri_x, Ri_y], #[0.5*Re_x + sqrt(3)/2 * Re_y, sqrt(3)/2 * Re_x - 0.5 * Re_y])
-	]
-	var sketch = workplane
-	for (var i = 0; i < 6; i++) {
-		val angleStep = 60 * i
-		sketch = sketch.add(sketchDef.rotate[angle = angleStep])
-	}
-	val prism = workplane.addSketch(sketch).extrude(depth, [secondLimit = depth])
-
-	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
-	val cone = workplane(plane[origin = #[0, 0, depth] normal = #[0, 0, -1]]).cone(
-		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}]).
-		translate(#[0, 0, depth])
-	var recess = prism.intersect(cone)
-	
-	if (true) {
-		val r_1 = 0.505 * A + depth / Math.tan(Math.toRadians(18))
-		val r_2 = 0.49 * B
-		val h_1 = depth + (0.505 * A - 0.49 * B) * Math.tan(Math.toRadians(18))
-		val cone2 = workplane(plane[origin = #[0,0,0], normal = #[0,0,-1]])
-    	.cone(r_1, r_2, h_1, [centered = #{true, true, false}]).translate(#[0,0,depth*2])
-		recess = recess.union(cone2)
-	}
-	show(recess)
+//	val params = #{6.75, 4.76, 0.56}
+//	val driveSize = "T40"
+//	val A = params.get(0)
+//	val B = params.get(1)
+//	val Re = params.get(2)
+//	val width = sqrt(3) * A / 2
+//	val depth = 5.06
+//
+//	val Ri = -((B + sqrt(3) * (2.0 * Re - A)) * B + (A - 4.0 * Re) * A) / (4.0 * B - 2.0 * sqrt(3) * A + (4.0 * sqrt(
+//		3) - 8.0) * Re)
+//	val beta = Math.acos(A / (4 * Ri + 4 * Re) - (2 * Re) / (4 * Ri + 4 * Re)) - pi / 6
+//	val Re_x = A / 2.0 - Re + Re * Math.sin(beta)
+//	val Re_y = Re * Math.cos(beta)
+//	val Ri_y = B / 4.0
+//	val Ri_x = sqrt(3) * B / 4.0
+//
+//	val sketchDef = workplane.sketch [moveTo(Re_x, -Re_y).threePointArc(#[A / 2, 0.0], #[Re_x, Re_y])
+//		.threePointArc(#[Ri_x, Ri_y], #[0.5*Re_x + sqrt(3)/2 * Re_y, sqrt(3)/2 * Re_x - 0.5 * Re_y])
+//	]
+//	var sketch = workplane
+//	for (var i = 0; i < 6; i++) {
+//		val angleStep = 60 * i
+//		sketch = sketch.add(sketchDef.rotate[angle = angleStep])
+//	}
+//	val prism = workplane.addSketch(sketch).extrude(depth, [secondLimit = depth])
+//
+//	val coneOffset = 2 * depth + width / 3 - 0.08 * width * sqrt(3) / 3
+//	val cone = workplane(plane[origin = #[0, 0, depth] normal = #[0, 0, -1]]).cone(
+//		(3 * depth + width) / sqrt(3) + depth * sqrt(3), width * 0.08, coneOffset, [centered = #{true, true, false}]).
+//		translate(#[0, 0, depth])
+//	var recess = prism.intersect(cone)
+//	
+//	if (true) {
+//		val r_1 = 0.505 * A + depth / Math.tan(Math.toRadians(18))
+//		val r_2 = 0.49 * B
+//		val h_1 = depth + (0.505 * A - 0.49 * B) * Math.tan(Math.toRadians(18))
+//		val cone2 = workplane(plane[origin = #[0,0,0], normal = #[0,0,-1]])
+//    	.cone(r_1, r_2, h_1, [centered = #{true, true, false}]).translate(#[0,0,depth*2])
+//		recess = recess.union(cone2)
+//	}
+//	show(recess)
+//
+//	show
+//	val crossType = "3"
+//	val m = 6
+//
+//	val sizeMap = map
+////	"Size","b","e_min","g","f_mean","r","t1","alpha","beta" })
+//	sizeMap.put("0", #{0.61, 0.26, 0.81, 0.34, 0.3, 0.22, 138.0, 7.0})
+//	sizeMap.put("1", #{0.97, 0.41, 1.27, 0.54, 0.5, 0.34, 138.0, 7.0})
+//	sizeMap.put("2", #{1.47, 0.79, 2.29, 0.7, 0.6, 0.61, 140.0, 5.75})
+//	sizeMap.put("3", #{2.41, 1.98, 3.81, 0.83, 0.8, 1.01, 146.0, 5.75})
+//	sizeMap.put("4", #{3.48, 2.39, 5.08, 1.23, 1.0, 1.35, 153.0, 7.0})
+//
+//	val params = sizeMap.get(crossType)
+//	val b = params.get(0)
+//	val e_mean = params.get(1)
+//	val g = params.get(2)
+//	val f_mean = params.get(3)
+//	val r = params.get(4)
+//	val t1 = params.get(5)
+//	val alpha = params.get(6)
+//	val beta = params.get(7)
+//
+//	val rad265 = Math.toRadians(26.5)
+//	val rad28 = Math.toRadians(28.0)
+//	val tg = (m - g) / 2.0 / tan(rad265) // depth at radius of g
+//	val t_tot = tg + g / 2.0 * tan(rad28) // total depth
+//	val hm = m / 4.0
+//	val hmc = m / 2.0
+//	val rmax = m / 2.0 + hm * tan(rad265)
+//
+//	var crossGeo = workplane("XZ").sketch [
+//     	lineTo(0, hm).lineTo(rmax, hm).lineTo(g/2, -tg).lineTo(0, -t_tot).close
+//     ].revolve[axis = Z]
+//
+//	val rad_alpha = Math.toRadians(alpha / 2.0)
+//	val rad92 = Math.toRadians(92.0 / 2.0)
+//	val rad_beta = Math.toRadians(beta)
+//
+//	val rad_alpha_p = atan(tan(rad_alpha) / cos(rad_beta))
+//	val rad92_p = atan(tan(rad92) / cos(rad_beta))
+//
+//	val tb = tg + (g - b) / 2.0 * tan(rad28) // depth at dimension b
+////       radius of b-corner at hm
+//	val rbtop = b / 2.0 + (hmc + tb) * tan(rad_beta)
+//	// radius of b-corner at t_tot
+//	val rbtot = b / 2.0 - (t_tot - tb) * tan(rad_beta)
+//
+//	// delta between corner b and corner e in x direction
+//	val dre = e_mean / 2.0 / tan(rad_alpha_p)
+//
+//	val dx = m / 2.0 * cos(rad92_p)
+//	val dy = m / 2.0 * sin(rad92_p)
+//
+//	val PntC0 = #[rbtop, 0.0, hmc]
+//	val PntC1 = #[rbtot, 0.0, -t_tot]
+//	val PntC3 = #[rbtot + dre, e_mean / 2.0, -t_tot]
+//	val PntC5 = #[rbtot + dre, -e_mean / 2.0, -t_tot]
+//	val PntC7 = #[rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy, -t_tot]
+//	val PntC9 = #[rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy, -t_tot]
+//
+//	var crossEdgeGeo = workplane(plane[origin = #[0, 0, -t_tot]]).sketch [
+//    	moveTo(rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy)
+//    	.lineTo(rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy)
+//    	.lineTo(rbtot + dre, -e_mean / 2.0)
+//    	.lineTo(rbtot, 0.0)
+//    	.lineTo(rbtot + dre, e_mean / 2.0)
+//    	.close
+//    ].extrude(1, [direction = PntC0.subtract(PntC1)])
+//
+//	for (var i = 0; i <= 4; i++) {
+//		val rotCount = i
+//		crossGeo = crossGeo.cut(crossEdgeGeo.rotate[angle = rotCount * 90[deg] axis = #[0, 0, 1]])
+//	}
+//
+//	show(crossGeo, PntC0, PntC1, PntC3, PntC5, PntC7, PntC9)
+	val width = 1.66[mm]
+	val depth = 1.4[mm]
+	val headDiameter = 12.6[mm]
+	val slot = workplane.box(headDiameter + 10.0, width, depth * 2)
 
 	show
 }
