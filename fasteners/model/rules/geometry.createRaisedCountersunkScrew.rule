@@ -3,6 +3,7 @@ import standards.raisedcountersunkheadscrew.ISO2010
 import standards.raisedcountersunkheadscrew.ISO7047
 import standards.raisedcountersunkheadscrew.RaisedCountersunkHeadScrew
 import standards.raisedcountersunkheadscrew.RaisedCountersunkStandardType
+import standards.thread.Length
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
@@ -12,7 +13,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createRaisedCountersunkScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], makeThread:Boolean = true, standard:RaisedCountersunkStandardType = RaisedCountersunkStandardType.ISO2010)
+rule geometry.createRaisedCountersunkScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, makeThread:Boolean = true, standard:RaisedCountersunkStandardType = RaisedCountersunkStandardType.ISO2010)
 do {
 
 	// DEBUG vals
@@ -23,8 +24,6 @@ do {
 		(bolt:RaisedCountersunkHeadScrew)-[:head]->(cskHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
 	]
-
-	bolt.length = length
 
 	switch (standard) {
 		case ISO2010: {
@@ -40,9 +39,10 @@ do {
 			throw new IllegalArgumentException("standard not implemented")
 	}
 
-	bolt.setParameters(d)
+	bolt.setParameters(d, l)
 
 	val dia = bolt.Dia
+	val length = bolt.length
 	val P = bolt.P
 	val b = bolt.b
 	val dkTheo = bolt.dkTheo

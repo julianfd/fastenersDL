@@ -1,33 +1,45 @@
 package standards.cylinderheadbolt
 
 import topology.Standard
+import topology.RecessType
 import standards.thread.ThreadSize
+import standards.thread.Length
 import topology.Bolt
 
 class CylinderHeadBolt extends Bolt {
 	CylinderHeadBoltStandard standard
-	thread : ThreadSize
-	length : Unit[mm]
-	Dia    : Unit[mm]
-	P      : Unit[mm] // thread pitch
-	b      : Unit[mm] // standard threaded length
-	dk_max : Unit[mm] // max head diameter
-	da     : Unit[mm] // bearing-face diameter under head
-	ds_min : Unit[mm] // minimum shank/body diameter
-	e_     : Unit[mm] // drive width across corners
-	k      : Unit[mm] // head height
-	r      : Unit[mm] // head-to-shank fillet radius
-	s_mean : Unit[mm] // mean drive width across flats
-	t      : Unit[mm] // drive depth (t1 in DIN 6912 table)
+	thread     : ThreadSize
+	recessType : RecessType
+	length     : Unit[mm]
+	Dia        : Unit[mm]
+	P          : Unit[mm] // thread pitch
+	b          : Unit[mm] // standard threaded length
+	dk_max     : Unit[mm] // max head diameter
+	da         : Unit[mm] // bearing-face diameter under head
+	ds_min     : Unit[mm] // minimum shank/body diameter
+	e_         : Unit[mm] // drive width across corners
+	k          : Unit[mm] // head height
+	r          : Unit[mm] // head-to-shank fillet radius
+	s_mean     : Unit[mm] // mean drive width across flats
+	t          : Unit[mm] // drive depth (t1 in DIN 6912 table)
 //	 t2 = parameters.get(10) // additional drilled recess depth (DIN 6912 only)
 
-	v      : Unit[mm] // head-edge chamfer height/radius
-	dw     : Unit[mm] // diameter where the top chamfer meets the head
-	w      : Unit[mm]
+	v          : Unit[mm] // head-edge chamfer height/radius
+	dw         : Unit[mm] // diameter where the top chamfer meets the head
+	w          : Unit[mm]
 
-	op setParameters(d:ThreadSize) {
+	op setParameters(d:ThreadSize, l:Length) {
+		if (standard === null) {
+			throw new IllegalStateException("standard not set")
+		}
+
+		if (!standard.checkAllowedRange(d, l))
+			throw new IllegalArgumentException("Given length " + l + " is out of range for thread " + d)
+
 		thread = d
-		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
+		length = rule geometry.GeometryUtil.op.getLength(l)
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
+		recessType = standard.recessType
 		val parameters = standard.getParameters.get(d)
 		P = parameters.get(0) * 1[mm]
 		b = parameters.get(1) * 1[mm]
@@ -46,22 +58,22 @@ class CylinderHeadBolt extends Bolt {
 }
 
 interface CylinderHeadBoltStandard extends Standard {
+	op getRecessType() : RecessType {
+	}
 
+	op getDriveSize() : String {
+	}
 }
 
 enum CylinderHeadBoltStandardTypes {
 	ISO4762, DIN7984, DIN6912, ISO14579
 }
 
-interface CylinderHeadHexRecessBoltStandard extends CylinderHeadBoltStandard {
-}
+class ISO4762 extends CylinderHeadBoltStandard {
+	op getRecessType() : RecessType {
+		return RecessType.HEX
+	}
 
-interface CylinderHeadHexalobularRecessStandard extends CylinderHeadBoltStandard {
-	driveSize : String
-}
-
-class ISO4762 extends CylinderHeadHexRecessBoltStandard {
-	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// Dia,P0, b1 ,dk_max2 ,da3 ,ds_min4 ,e5 ,lf6 ,k7 ,r8 ,s_mean9 ,t10 ,v11 ,dw12 ,w13
@@ -98,12 +110,41 @@ class ISO4762 extends CylinderHeadHexRecessBoltStandard {
 			6.0, 140.0, 96.0, 71.0, 63.54, 52.54, 5.95, 64.0, 2.0, 46.15, 38.0, 6.4, 94.26, 22.0})
 		return paramMap
 	}
-	@Override
-	op checkAllowedRange(thread:String, length:String) : Boolean {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L2_5, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L4, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L5, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L6, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L16, Length.L100})
+		rangeMap.put(ThreadSize.M12, #{Length.L20, Length.L120})
+		rangeMap.put(ThreadSize.M14, #{Length.L25, Length.L140})
+		rangeMap.put(ThreadSize.M16, #{Length.L25, Length.L160})
+		rangeMap.put(ThreadSize.M20, #{Length.L16, Length.L100})
+		rangeMap.put(ThreadSize.M24, #{Length.L40, Length.L200})
+		rangeMap.put(ThreadSize.M30, #{Length.L45, Length.L200})
+		rangeMap.put(ThreadSize.M36, #{Length.L55, Length.L200})
+		rangeMap.put(ThreadSize.M42, #{Length.L60, Length.L300})
+		rangeMap.put(ThreadSize.M48, #{Length.L100, Length.L300})
+		rangeMap.put(ThreadSize.M56, #{Length.L110, Length.L300})
+		rangeMap.put(ThreadSize.M64, #{Length.L120, Length.L300})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 }
 
-class DIN7984 extends CylinderHeadHexRecessBoltStandard {
+class DIN7984 extends CylinderHeadBoltStandard {
+	op getRecessType() : RecessType {
+		return RecessType.HEX
+	}
 
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
@@ -123,14 +164,35 @@ class DIN7984 extends CylinderHeadHexRecessBoltStandard {
 		paramMap.put(ThreadSize.M24, #{3.0, 54.0, 36.0, 26.4, 23.67, 19.44, 0.0, 13.0, 0.8, 17.0, 8.0, 2.4, 34.61, 0.0})
 		return paramMap
 	}
-	@Override
-	op checkAllowedRange(thread:ThreadSize, length:Unit[mm]) : Boolean {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M3, #{Length.L5, Length.L20})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L25})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L30})
+		rangeMap.put(ThreadSize.M6, #{Length.L10, Length.L40})
+		rangeMap.put(ThreadSize.M8, #{Length.L12, Length.L60})
+		rangeMap.put(ThreadSize.M10, #{Length.L16, Length.L70})
+		rangeMap.put(ThreadSize.M12, #{Length.L20, Length.L80})
+		rangeMap.put(ThreadSize.M14, #{Length.L30, Length.L80})
+		rangeMap.put(ThreadSize.M16, #{Length.L30, Length.L80})
+		rangeMap.put(ThreadSize.M18, #{Length.L40, Length.L100})
+		rangeMap.put(ThreadSize.M20, #{Length.L40, Length.L100})
+		rangeMap.put(ThreadSize.M22, #{Length.L50, Length.L100})
+		rangeMap.put(ThreadSize.M24, #{Length.L50, Length.L100})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 
 }
 
-class DIN6912 extends CylinderHeadHexRecessBoltStandard {
-	@Override
+class DIN6912 extends CylinderHeadBoltStandard {
+	op getRecessType() : RecessType {
+		return RecessType.HEX
+	}
+
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// Dia,P,b,dk_max,da,ds_min,e,lf,k,r,s_mean,t,v,dw,w
@@ -154,14 +216,38 @@ class DIN6912 extends CylinderHeadHexRecessBoltStandard {
 			4.0, 78.0, 54.0, 39.4, 65.61, 30.85, 0.0, 21.5, 1.0, 27.0, 11.5, 3.6, 52.34, 0.0})
 		return paramMap
 	}
-	@Override
-	op checkAllowedRange(thread:ThreadSize, length:Unit[mm]) : Boolean {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M4, #{Length.L10, Length.L50})
+		rangeMap.put(ThreadSize.M5, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M6, #{Length.L10, Length.L70})
+		rangeMap.put(ThreadSize.M8, #{Length.L12, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L16, Length.L90})
+		rangeMap.put(ThreadSize.M12, #{Length.L16, Length.L100})
+		rangeMap.put(ThreadSize.M14, #{Length.L20, Length.L120})
+		rangeMap.put(ThreadSize.M16, #{Length.L20, Length.L140})
+		rangeMap.put(ThreadSize.M18, #{Length.L25, Length.L150})
+		rangeMap.put(ThreadSize.M20, #{Length.L30, Length.L180})
+		rangeMap.put(ThreadSize.M22, #{Length.L40, Length.L200})
+		rangeMap.put(ThreadSize.M24, #{Length.L60, Length.L200})
+		rangeMap.put(ThreadSize.M27, #{Length.L70, Length.L200})
+		rangeMap.put(ThreadSize.M30, #{Length.L70, Length.L200})
+		rangeMap.put(ThreadSize.M33, #{Length.L80, Length.L200})
+		rangeMap.put(ThreadSize.M36, #{Length.L90, Length.L200})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 
 }
 
-class ISO14579 extends CylinderHeadHexalobularRecessStandard {
-	@Override
+class ISO14579 extends CylinderHeadBoltStandard {
+	op getRecessType() : RecessType {
+		return RecessType.HEXALOBULAR
+	}
+
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// Dia,P0, b1 ,dk_max2 ,da3 ,ds_min4 ,e5 ,lf6 ,k7 ,r8 ,s_mean9 ,t10 ,v11 ,dw12 ,w13
@@ -198,8 +284,29 @@ class ISO14579 extends CylinderHeadHexalobularRecessStandard {
 			6.0, 140.0, 96.0, 71.0, 63.54, 52.54, 5.95, 64.0, 2.0, 46.15, 38.0, 6.4, 94.26, 22.0})
 		return paramMap
 	}
-	
-	op setDriveSize(thread:ThreadSize) {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L4, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L5, Length.L30})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L12, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L16, Length.L100})
+		rangeMap.put(ThreadSize.M12, #{Length.L20, Length.L120})
+		rangeMap.put(ThreadSize.M14, #{Length.L25, Length.L140})
+		rangeMap.put(ThreadSize.M16, #{Length.L25, Length.L160})
+		rangeMap.put(ThreadSize.M18, #{Length.L30, Length.L180})
+		rangeMap.put(ThreadSize.M20, #{Length.L30, Length.L200})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
+	}
+
+	op getDriveSize(thread:ThreadSize) : String {
 		val sizeMap = map
 //		"Dia","DriveSize /TX","A","t_mean"
 		sizeMap.put(ThreadSize.M2, "T6")
@@ -215,11 +322,8 @@ class ISO14579 extends CylinderHeadHexalobularRecessStandard {
 		sizeMap.put(ThreadSize.M16, "T70")
 		sizeMap.put(ThreadSize.M18, "T80")
 		sizeMap.put(ThreadSize.M20, "T90")
-		driveSize = sizeMap.get(thread)
+		return sizeMap.get(thread)
 	}                                         
 	
-	@Override
-	op checkAllowedRange(thread:ThreadSize, length:Unit[mm]) : Boolean {
-	}
 
 }

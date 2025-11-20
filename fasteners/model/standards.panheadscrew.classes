@@ -1,6 +1,7 @@
 package standards.panheadscrew
 
 import standards.thread.ThreadSize
+import standards.thread.Length
 import topology.Bolt
 import topology.RecessType
 import topology.Standard
@@ -32,13 +33,18 @@ class PanHeadScrew extends Bolt {
 	torxDepth          : Unit[mm]
 	recessDirectOffset : Unit[mm]
 
-	op setParameters(d:ThreadSize) {
+	op setParameters(d:ThreadSize, l:Length) {
 		if (standard === null) {
 			throw new IllegalStateException("standard not set")
 		}
+
+		if (!standard.checkAllowedRange(d, l))
+			throw new IllegalArgumentException("Given length " + l + " is out of range for thread " + d)
+
 		thread = d
+		length = rule geometry.GeometryUtil.op.getLength(l)
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
 		recessType = standard.recessType
-		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
 		val parameters = standard.getParameters.get(thread)
 		if (parameters === null) {
 			throw new IllegalArgumentException("Thread size not supported for " + standard.class.simpleName)
@@ -85,6 +91,24 @@ class ISO7045 extends PanHeadStandard {
 		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 38.0, 20.0, 11.2, 7.5, 0.4, 16.0, 3.8, 4.0, 10.1, 9.9, 0.0, 0.0, 0.0})
 		return paramMap
 	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L3, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L3, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L4, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L5, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L5, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L6, Length.L45})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M10, #{Length.L12, Length.L60})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
+	}
 }
 
 class ISO14583 extends PanHeadStandard {
@@ -110,4 +134,23 @@ class ISO14583 extends PanHeadStandard {
 			1.5, 3.0, 38.0, 20.0, 11.2, 8.1385, 0.4, 16.0, 3.8, 0.0, 0.0, 0.0, 50.0, 3.82, 7.5})
 		return paramMap
 	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L3, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L3, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L4, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L5, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L5, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L6, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M10, #{Length.L12, Length.L60})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
+	}
+	
 }

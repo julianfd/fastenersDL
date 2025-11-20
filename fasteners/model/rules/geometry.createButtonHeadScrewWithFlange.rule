@@ -4,13 +4,14 @@ import standards.buttonheadscrewithflange.ISO7380_2
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
+import standards.thread.Length
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createButtonHeadScrewWithFlange(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], standard:FlangedButtonHeadStandardType = FlangedButtonHeadStandardType.ISO7380_2)
+rule geometry.createButtonHeadScrewWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:FlangedButtonHeadStandardType = FlangedButtonHeadStandardType.ISO7380_2)
 do {
 	G+[
 		(bolt:FlangedButtonHeadScrew)-[:head]->(buttonHead:BoltHead)
@@ -20,8 +21,6 @@ do {
 //	val d = ThreadSize.M6
 //	val length = 25[mm]
 //	val standard = FlangedButtonHeadStandardType.ISO7380_2
-	bolt.length = length
-
 	switch (standard) {
 		case ISO7380_2: {
 			G+[(bolt)-[:standard]->(:ISO7380_2)]
@@ -30,9 +29,10 @@ do {
 			throw new IllegalArgumentException("standard not implemented")
 	}
 
-	bolt.setParameters(d)
+	bolt.setParameters(d, l)
 
 	val dia = bolt.Dia
+	val length = bolt.length
 	val P = bolt.P
 	val b = bolt.b
 	val c = bolt.c

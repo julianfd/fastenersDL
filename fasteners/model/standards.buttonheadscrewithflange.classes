@@ -2,6 +2,7 @@ package standards.buttonheadscrewithflange
 
 import topology.Standard
 import standards.thread.ThreadSize
+import standards.thread.Length
 import topology.Bolt
 
 class FlangedButtonHeadScrew extends Bolt {
@@ -22,12 +23,17 @@ class FlangedButtonHeadScrew extends Bolt {
 	e_       : Unit[mm]
 	w        : Unit[mm]
 
-	op setParameters(d:ThreadSize) {
+	op setParameters(d:ThreadSize, l:Length) {
 		if (standard === null) {
 			throw new IllegalStateException("standard not set")
 		}
+
+		if (!standard.checkAllowedRange(d, l))
+			throw new IllegalArgumentException("Given length " + l + " is out of range for thread " + d)
+
 		thread = d
-		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
+		length = rule geometry.GeometryUtil.op.getLength(l)
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
 		val parameters = standard.getParameters.get(thread)
 		if (parameters === null) {
 			throw new IllegalArgumentException("Thread size not supported for " + standard.class.simpleName)
@@ -55,7 +61,6 @@ enum FlangedButtonHeadStandardType {
 }
 
 class ISO7380_2 extends FlangedButtonHeadStandard {
-	@Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		// P, b, c, da, dk, dk_c, s_mean, t_min, r, k, e, w
@@ -68,5 +73,21 @@ class ISO7380_2 extends FlangedButtonHeadStandard {
 		paramMap.put(ThreadSize.M12, #{1.75, 36.0, 2.4, 13.7, 19.4, 26.0, 8.06, 4.16, 0.6, 6.6, 9.15, 1.63})
 		paramMap.put(ThreadSize.M16, #{2.0, 44.0, 2.8, 17.7, 26.0, 34.0, 10.06, 5.2, 0.6, 8.8, 11.43, 2.25})
 		return paramMap
+	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M3, #{Length.L6, Length.L30})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L12, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L16, Length.L90})
+		rangeMap.put(ThreadSize.M12, #{Length.L20, Length.L90})
+		rangeMap.put(ThreadSize.M16, #{Length.L25, Length.L90})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 }

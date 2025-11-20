@@ -2,6 +2,7 @@ import standards.panheadscrew.ISO14583
 import standards.panheadscrew.ISO7045
 import standards.panheadscrew.PanHeadScrew
 import standards.panheadscrew.PanHeadStandardType
+import standards.thread.Length
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
@@ -11,7 +12,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createPanHeadScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], makeThread:Boolean = true, standard:PanHeadStandardType = PanHeadStandardType.ISO7045)
+rule geometry.createPanHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, makeThread:Boolean = true, standard:PanHeadStandardType = PanHeadStandardType.ISO7045)
 do {
 
 	// DEBUG vals
@@ -22,8 +23,6 @@ do {
 		(bolt:PanHeadScrew)-[:head]->(panHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
 	]
-
-	bolt.length = length
 
 	switch (standard) {
 		case ISO7045: {
@@ -36,9 +35,9 @@ do {
 			throw new IllegalArgumentException("standard not implemented")
 	}
 
-	bolt.setParameters(d)
-
+	bolt.setParameters(d, l)
 	val dia = bolt.Dia
+	val length = bolt.length
 	val P = bolt.P
 	val b = bolt.b
 	val k = bolt.k

@@ -2,6 +2,7 @@ package standards.hexheadbolt
 
 import topology.Standard
 import standards.thread.ThreadSize
+import standards.thread.Length
 import topology.Bolt
 
 class HexHeadBolt extends Bolt {
@@ -20,9 +21,17 @@ class HexHeadBolt extends Bolt {
 	r      : Unit[mm] // head-to-shank fillet radius
 	s      : Unit[mm] // hex width across flats
 
-	op setParameters(d:ThreadSize) {
+	op setParameters(d:ThreadSize, l:Length) {
+		if (standard === null) {
+			throw new IllegalStateException("standard not set")
+		}
+
+		if (!standard.checkAllowedRange(d, l))
+			throw new IllegalArgumentException("Given length " + l + " is out of range for thread " + d)
+
 		thread = d
-		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm] // TODO remove Utimethod
+		length = rule geometry.GeometryUtil.op.getLength(l)
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
 		val parameters = standard.getParameters.get(thread)
 		P = parameters.get(0) * 1[mm]
 		b1 = parameters.get(1) * 1[mm]
@@ -80,9 +89,44 @@ class ISO4014 extends HexHeadStandard {
 		paramMap.put(ThreadSize.M64, #{6.0, 153.0, 153.0, 153.0, 0.6, 88.2, 104.9, 40.0, 2.0, 55.0})
 		return paramMap
 	}
-	@Override
-	op checkAllowedRange(thread:String, length:String) : Boolean {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L12, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L16, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L16, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L20, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L20, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L25, Length.L50})
+		rangeMap.put(ThreadSize.M5, #{Length.L25, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L30, Length.L130})
+		rangeMap.put(ThreadSize.M8, #{Length.L30, Length.L180})
+		rangeMap.put(ThreadSize.M10, #{Length.L35, Length.L150})
+		rangeMap.put(ThreadSize.M12, #{Length.L50, Length.L150})
+		rangeMap.put(ThreadSize.M14, #{Length.L50, Length.L160})
+		rangeMap.put(ThreadSize.M16, #{Length.L55, Length.L200})
+		rangeMap.put(ThreadSize.M18, #{Length.L70, Length.L180})
+		rangeMap.put(ThreadSize.M20, #{Length.L60, Length.L300})
+		rangeMap.put(ThreadSize.M22, #{Length.L70, Length.L220})
+		rangeMap.put(ThreadSize.M24, #{Length.L80, Length.L220})
+		rangeMap.put(ThreadSize.M27, #{Length.L90, Length.L220})
+		rangeMap.put(ThreadSize.M30, #{Length.L110, Length.L300})
+		rangeMap.put(ThreadSize.M33, #{Length.L130, Length.L320})
+		rangeMap.put(ThreadSize.M36, #{Length.L140, Length.L360})
+		rangeMap.put(ThreadSize.M39, #{Length.L150, Length.L380})
+		rangeMap.put(ThreadSize.M42, #{Length.L160, Length.L440})
+		rangeMap.put(ThreadSize.M45, #{Length.L180, Length.L440})
+		rangeMap.put(ThreadSize.M48, #{Length.L180, Length.L480})
+		rangeMap.put(ThreadSize.M52, #{Length.L200, Length.L480})
+		rangeMap.put(ThreadSize.M56, #{Length.L220, Length.L500})
+		rangeMap.put(ThreadSize.M60, #{Length.L220, Length.L500})
+		rangeMap.put(ThreadSize.M64, #{Length.L260, Length.L500})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
+
 }
 
 class DIN933 extends HexHeadStandard {
@@ -123,7 +167,41 @@ class DIN933 extends HexHeadStandard {
 
 		return paramMap
 	}
-	@Override
-	op checkAllowedRange(thread:String, length:String) : Boolean {
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L2, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L4, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L5, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L5, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L8, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L12, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L16, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L20, Length.L100})
+		rangeMap.put(ThreadSize.M12, #{Length.L25, Length.L120})
+		rangeMap.put(ThreadSize.M14, #{Length.L25, Length.L140})
+		rangeMap.put(ThreadSize.M16, #{Length.L30, Length.L150})
+		rangeMap.put(ThreadSize.M18, #{Length.L35, Length.L200})
+		rangeMap.put(ThreadSize.M20, #{Length.L40, Length.L160})
+		rangeMap.put(ThreadSize.M22, #{Length.L45, Length.L200})
+		rangeMap.put(ThreadSize.M24, #{Length.L50, Length.L180})
+		rangeMap.put(ThreadSize.M27, #{Length.L50, Length.L100})
+		rangeMap.put(ThreadSize.M30, #{Length.L60, Length.L200})
+		rangeMap.put(ThreadSize.M33, #{Length.L65, Length.L200})
+		rangeMap.put(ThreadSize.M36, #{Length.L70, Length.L200})
+		rangeMap.put(ThreadSize.M39, #{Length.L80, Length.L200})
+		rangeMap.put(ThreadSize.M42, #{Length.L70, Length.L200})
+		rangeMap.put(ThreadSize.M45, #{Length.L90, Length.L200})
+		rangeMap.put(ThreadSize.M48, #{Length.L100, Length.L200})
+		rangeMap.put(ThreadSize.M52, #{Length.L100, Length.L200})
+		rangeMap.put(ThreadSize.M56, #{Length.L110, Length.L200})
+		rangeMap.put(ThreadSize.M60, #{Length.L120, Length.L200})
+		rangeMap.put(ThreadSize.M64, #{Length.L120, Length.L200})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 }

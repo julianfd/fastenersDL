@@ -1,19 +1,15 @@
 import geo.Workplane
+import standards.thread.Length
+import standards.thread.ThreadSize
 
 rule geometry.GeometryUtil
 
-op getDia(dia:String) : Double {
-	var diameter = 0.0
-	if (dia.startsWith("(")) {
-		diameter = Double.parseDouble(dia.substring(2, dia.length))
-	} else {
-		diameter = Double.parseDouble(dia.substring(1))
-	}
-	return diameter
+op getLength(length : Length) : Unit[mm] {
+	return Double.parseDouble(length.toString.replace("_", ".").substring(1)) * 1[mm]
 }
 
-op getLength(len:String) : Double {
-	return Double.parseDouble(len.substring(1))
+op getDia(thread:ThreadSize) : Unit[mm] {
+	return Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
 }
 
 /*
@@ -155,10 +151,6 @@ op createCrossRecess(crossType : String, m : Double) : Workplane {
 
 	val PntC0 = #[rbtop, 0.0, hmc]
 	val PntC1 = #[rbtot, 0.0, -t_tot]
-	val PntC3 = #[rbtot + dre, e_mean / 2.0, -t_tot]
-	val PntC5 = #[rbtot + dre, -e_mean / 2.0, -t_tot]
-	val PntC7 = #[rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy, -t_tot]
-	val PntC9 = #[rbtot + dre + 2.0 * dx, -e_mean - 2.0 * dy, -t_tot]
 
 	var crossEdgeGeo = workplane(plane[origin = #[0, 0, -t_tot]]).sketch [
     	moveTo(rbtot + dre + 2.0 * dx, e_mean + 2.0 * dy)

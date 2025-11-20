@@ -1,22 +1,21 @@
-import standards.cylinderheadbolt.CylinderHeadBoltStandard
+import standards.cylinderheadbolt.CylinderHeadBolt
 import standards.cylinderheadbolt.CylinderHeadBoltStandardTypes
 import standards.cylinderheadbolt.DIN6912
 import standards.cylinderheadbolt.DIN7984
 import standards.cylinderheadbolt.ISO14579
 import standards.cylinderheadbolt.ISO4762
+import standards.thread.Length
 import standards.thread.ThreadSize
-import topology.Bolt
 import topology.BoltHead
 import topology.BoltShaft
 import topology.RecessType
-import standards.cylinderheadbolt.CylinderHeadBolt
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createCylinderHeadBolt(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 22[mm], standard:CylinderHeadBoltStandardTypes = CylinderHeadBoltStandardTypes.ISO14579)
+rule geometry.createCylinderHeadBolt(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:CylinderHeadBoltStandardTypes = CylinderHeadBoltStandardTypes.ISO14579)
 do {
 	/*
 	 * - ISO 4762 heaxagon socket head cap screw
@@ -47,16 +46,16 @@ do {
 		}
 		case CylinderHeadBoltStandardTypes.ISO14579: {
 			G+[(bolt)-[:standard]->(std:ISO14579)]
-			std.setDriveSize(d)
 			recess = RecessType.HEXALOBULAR
-			hexalobularSize = std.driveSize
+			hexalobularSize = std.getDriveSize(d)
 		}
 		default:
 			throw new IllegalArgumentException("standard not implemented.")
 	}
 
-	bolt.setParameters(d)
+	bolt.setParameters(d, l)
 	val dia = bolt.Dia
+	val length = bolt.length
 	val P = bolt.P // thread pitch
 	val b = bolt.b // standard threaded length
 	val dk_max = bolt.dk_max // max head diameter

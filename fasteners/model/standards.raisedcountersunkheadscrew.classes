@@ -1,6 +1,7 @@
 package standards.raisedcountersunkheadscrew
 
 import standards.thread.ThreadSize
+import standards.thread.Length
 import topology.Bolt
 import topology.RecessType
 import topology.Standard
@@ -37,12 +38,17 @@ class RaisedCountersunkHeadScrew extends Bolt {
 	Ac               : Unit[mm]
 	f                : Unit[mm]
 
-	op setParameters(d:ThreadSize) {
+	op setParameters(d:ThreadSize, l:Length) {
 		if (standard === null) {
 			throw new IllegalStateException("standard not set")
 		}
+
+		if (!standard.checkAllowedRange(d, l))
+			throw new IllegalArgumentException("Given length " + l + " is out of range for thread " + d)
+
 		thread = d
-		Dia = Double.parseDouble(thread.toString.replace("_", ".").substring(1)) * 1[mm]
+		length = rule geometry.GeometryUtil.op.getLength(l)
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
 		countersinkAngle = standard.countersinkAngle
 		recessType = standard.recessType
 		val parameters = standard.getParameters.get(thread)
@@ -81,7 +87,6 @@ class ISO2010 extends RaisedCountersunkStandard {
 		return 90[deg]
 	}
 
-    @Override
 	op getParameters() : Map<ThreadSize, List<Double>> {
 		val Map<ThreadSize, List<Double>> paramMap = map
 		paramMap.put(ThreadSize.M1_6, #{0.35, 0.7, 25.0, 3.6, 2.8, 1.0, 0.46, 0.2, 0.7, 3.0, 0.0, 0.0, 0.0, 0.0, 0.0})
@@ -96,6 +101,25 @@ class ISO2010 extends RaisedCountersunkStandard {
 		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 38.0, 20.0, 18.1, 5.0, 2.56, 1.2, 4.1, 19.5, 0.0, 0.0, 0.0, 0.0, 0.0})
 		return paramMap
 	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L2_5, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L4, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L5, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L6, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L6, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L8, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L80})
+		rangeMap.put(ThreadSize.M10, #{Length.L12, Length.L80})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
+	}
+	
 }
 
 class ISO7047 extends RaisedCountersunkStandard {
@@ -123,6 +147,25 @@ class ISO7047 extends RaisedCountersunkStandard {
 		paramMap.put(ThreadSize.M10, #{1.5, 3.0, 38.0, 20.0, 18.1, 5.0, 2.56, 1.2, 4.1, 19.5, 4.0, 10.4, 0.0, 0.0, 0.0})
 		return paramMap
 	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M1_6, #{Length.L3, Length.L16})
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L3, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L4, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L5, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L5, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L6, Length.L45})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M10, #{Length.L12, Length.L60})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
+	}
+	
 }
 
 class ISO14584 extends RaisedCountersunkStandard {
@@ -149,5 +192,22 @@ class ISO14584 extends RaisedCountersunkStandard {
 			1.25, 0.0, 38.0, 17.3, 15.8, 4.65, 0.0, 1.0, 3.0, 16.5, 0.0, 0.0, 45.0, 7.95, 2.0})
 		paramMap.put(ThreadSize.M10, #{1.5, 0.0, 38.0, 20.0, 18.3, 5.0, 0.0, 1.2, 3.8, 19.5, 0.0, 0.0, 50.0, 8.95, 2.3})
 		return paramMap
+	}
+
+	op getAllowedRange(thread:ThreadSize) : List<Length> {
+		val rangeMap = map
+		rangeMap.put(ThreadSize.M2, #{Length.L3, Length.L20})
+		rangeMap.put(ThreadSize.M2_5, #{Length.L3, Length.L25})
+		rangeMap.put(ThreadSize.M3, #{Length.L4, Length.L30})
+		rangeMap.put(ThreadSize.M3_5, #{Length.L5, Length.L35})
+		rangeMap.put(ThreadSize.M4, #{Length.L5, Length.L40})
+		rangeMap.put(ThreadSize.M5, #{Length.L6, Length.L50})
+		rangeMap.put(ThreadSize.M6, #{Length.L8, Length.L60})
+		rangeMap.put(ThreadSize.M8, #{Length.L10, Length.L60})
+		rangeMap.put(ThreadSize.M10, #{Length.L12, Length.L60})
+		val r = rangeMap.get(thread)
+		if (r === null)
+			throw new IllegalArgumentException("Thread size +" + thread + " not covered by the standard " + this.class)
+		return rangeMap.get(thread)
 	}
 }

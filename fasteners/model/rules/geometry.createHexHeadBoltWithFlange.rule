@@ -4,6 +4,7 @@ import standards.hexheadboltwithflange.HexHeadWithFlangeBolt
 import standards.hexheadboltwithflange.HexHeadWithFlangeStandardType
 import standards.hexheadboltwithflange.ISO15071
 import standards.hexheadboltwithflange.ISO4162
+import standards.thread.Length
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
@@ -13,7 +14,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 20[mm], standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071) // make enum
+rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071) // make enum
 // Translated from FsFunctions/FSmakeHexHeadWithFlange.py
 // Supported: ISO 4162, ISO 15071, ISO 15072, EN 1662, EN 1665, ASMEB18.2.1.8
 // Builds a flanged hex head by revolving the profile generated below and
@@ -48,8 +49,9 @@ do {
 	val beta = Math.toRadians(25.0)
 	val tanBeta = tan(beta)
 
-	bolt.setParameters(d)
+	bolt.setParameters(d, l)
 	val dia = bolt.dia
+	val length = bolt.length
 	val P = bolt.P
 	val b0 = bolt.b0
 	val b1 = bolt.b1

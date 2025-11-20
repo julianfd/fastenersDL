@@ -8,13 +8,14 @@ import standards.countersunkheadscrew.ISO7046
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
+import standards.thread.Length
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createCountersunkHeadScrew(d:ThreadSize = ThreadSize.M6, length:Unit[mm] = 25[mm], standard:CountersunkStandardType = CountersunkStandardType.ISO10642)
+rule geometry.createCountersunkHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:CountersunkStandardType = CountersunkStandardType.ISO10642)
 do {
 
 	// DEBUG vals
@@ -25,8 +26,6 @@ do {
 		(bolt:CountersunkHeadScrew)-[:head]->(cskHead:BoltHead)
 		(bolt)-[:shaft]->(boltShaft:BoltShaft)
 	]
-
-	bolt.length = length
 
 	switch (standard) {
 		case ISO10642: {
@@ -48,9 +47,9 @@ do {
 			throw new IllegalArgumentException("standard not implemented")
 	}
 
-	bolt.setParameters(d)
-
+	bolt.setParameters(d, l)
 	val dia = bolt.Dia
+	val length = bolt.length
 	val P = bolt.P
 	val b = bolt.b
 	val dkTheo = bolt.dkTheo
