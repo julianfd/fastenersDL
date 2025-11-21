@@ -1,0 +1,69 @@
+import standards.flangedhexnut.EN1661
+import standards.flangedhexnut.FlangedHexNut
+import standards.flangedhexnut.FlangedHexNutStandardType
+import standards.flangedhexnut.ISO10663
+import standards.flangedhexnut.ISO4161
+import standards.thread.ThreadSize
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createFlangedHexNut //(d:ThreadSize = ThreadSize.M8, standard:FlangedHexNutStandardType = FlangedHexNutStandardType.EN1661, threaded:Boolean = true)
+do {
+	val d = ThreadSize.M10
+	val standard = FlangedHexNutStandardType.ISO10663
+	G+[(nut:FlangedHexNut)]
+
+	switch (standard) {
+		case EN1661: {
+			G+[(nut)-[:standard]->(:EN1661)]
+		}
+		case ISO4161: {
+			G+[(nut)-[:standard]->(:ISO4161)]
+		}
+		case ISO10663: {
+			G+[(nut)-[:standard]->(:ISO10663)]
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented")
+	}
+
+	nut.setParameters(d)
+	val Dia = nut.Dia
+	val P = nut.P
+	val da = nut.da
+	val dc = nut.dc
+	val m = nut.m
+	val s = nut.s
+	val c = nut.c
+	val sqrt3 = sqrt(3)
+	val tan15 = tan(Math.toRadians(15))
+
+	val inner_rad = Dia / 2 - P * 0.625 * sqrt3 / 2
+	val inner_cham = tan15 * (da / 2 - inner_rad)
+
+	val bodyProfile = workplane("XZ").sketch [
+        moveTo(inner_rad, m - inner_cham).lineTo(da/2, m)
+        .lineTo(s/2, m).lineTo(s/2 + sqrt3*m, 0)
+        .lineTo(da/2, 0).lineTo(inner_rad, inner_cham).close
+    ].revolve[axis = Z]
+	val hexCut = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(m)
+	var nutSolid = bodyProfile.intersect(hexCut)
+
+	val flangeProfile = workplane("XZ").sketch [
+        moveTo((da+s)/4, 0)
+        .lineTo((dc+sqrt3*c)/2, 0)
+//        .lineTo((dc-c)/2, 0)
+        .tangentArc(c/2, 150)
+        .lineTo((da+s)/4, sqrt3/3*((dc-c)/2 + c/(4-2*sqrt3) - (da+s)/4)).close
+    ].revolve[axis = Z]
+	nutSolid = nutSolid.union(flangeProfile)
+	show(nutSolid)
+//	if (threaded) {
+//		val threadCutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
+//		nutSolid = nutSolid.cut(threadCutter)
+//	}
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_hex_nut", nutSolid))
+}

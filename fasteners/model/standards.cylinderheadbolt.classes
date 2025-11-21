@@ -1,6 +1,6 @@
 package standards.cylinderheadbolt
 
-import topology.Standard
+import topology.BoltStandard
 import topology.RecessType
 import standards.thread.ThreadSize
 import standards.thread.Length
@@ -57,7 +57,7 @@ class CylinderHeadBolt extends Bolt {
 	}
 }
 
-interface CylinderHeadBoltStandard extends Standard {
+interface CylinderHeadBoltStandard extends BoltStandard {
 	op getRecessType() : RecessType {
 	}
 

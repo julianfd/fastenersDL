@@ -1,6 +1,6 @@
 package standards.buttonheadscrewithflange
 
-import topology.Standard
+import topology.BoltStandard
 import standards.thread.ThreadSize
 import standards.thread.Length
 import topology.Bolt
@@ -53,7 +53,7 @@ class FlangedButtonHeadScrew extends Bolt {
 	}
 }
 
-interface FlangedButtonHeadStandard extends Standard {
+interface FlangedButtonHeadStandard extends BoltStandard {
 }
 
 enum FlangedButtonHeadStandardType {

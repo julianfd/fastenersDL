@@ -1,0 +1,69 @@
+import standards.capnut.CapNut
+import standards.capnut.CapNutStandardType
+import standards.capnut.DIN1587
+import standards.capnut.DIN917
+import standards.capnut.GOST11860_1
+import standards.thread.ThreadSize
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createCapNut //(d:ThreadSize = ThreadSize.M6, standard:CapNutStandardType = CapNutStandardType.DIN1587, threaded:Boolean = true)
+do {
+	val d = ThreadSize.M6
+	val standard = CapNutStandardType.DIN1587
+
+	G+[(nut:CapNut)]
+	switch (standard) {
+		case DIN1587: {
+			G+[(nut)-[:standard]->(:DIN1587)];
+		}
+		case DIN917: {
+			G+[(nut)-[:standard]->(:DIN917)];
+		}
+		case GOST11860_1: {
+			G+[(nut)-[:standard]->(:GOST11860_1)];
+		}
+	}
+	nut.setParameters(d)
+	val Dia = nut.Dia;
+	val P = nut.P;
+	val dk = nut.dk;
+	val h = nut.h;
+	val m = nut.m;
+	val s = nut.s;
+	val t = nut.t;
+	val w = nut.w
+	val sqrt3 = sqrt(3);
+	val sqrt2 = sqrt(2)
+	val ec = (2 - sqrt3) * s / 6
+	val profile = workplane("XZ").sketch [
+        moveTo(0, 1.1*Dia/4)
+        .lineTo(1.1*Dia/2, 0)
+        .lineTo(s/2, 0)
+        .lineTo(s*sqrt3/3, ec)
+		.lineTo(s*sqrt3/3, m - ec)
+        .lineTo(dk/2, (m - ec) + (2*s - sqrt3*dk)/6)
+        .lineTo(dk/2, h - dk/2)
+        .threePointArc(#[dk / 2 * sqrt2 / 2, h - dk / 2 + dk /2 * sqrt2 / 2], #[0, h] )
+        .close
+    ].revolve[axis = Z]
+	val hex = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h * 1.1)
+	var nutSolid = profile.intersect(hex)
+//	if (threaded) {
+//		val tap = GeometryUtil.op.blindInnerThreadCutter(Dia, P, h - w)
+//		val cham = workplane("XZ").sketch [
+//            moveTo(0, h - w).lineTo(1.1*Dia/2, t).lineTo(1.1*Dia/2, h).lineTo(0, h).close
+//        ].revolve[axis = Z]
+//		nutSolid = nutSolid.cut(tap.cut(cham))
+//	} else {
+	val inner = workplane("XZ").sketch [
+            moveTo(0, 0).lineTo(0, h-w).lineTo(Dia/2 - 0.625*P*sqrt3/2, t).lineTo(Dia/2 - 0.625*P*sqrt3/2, 0).close
+        ].revolve[axis = Z]
+	nutSolid = nutSolid.cut(inner)
+//	}
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_cap_nut", nutSolid))
+	show(nutSolid)
+}

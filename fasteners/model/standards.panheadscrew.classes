@@ -4,9 +4,9 @@ import standards.thread.ThreadSize
 import standards.thread.Length
 import topology.Bolt
 import topology.RecessType
-import topology.Standard
+import topology.BoltStandard
 
-interface PanHeadStandard extends Standard {
+interface PanHeadStandard extends BoltStandard {
 	op getRecessType() : RecessType
 }
 

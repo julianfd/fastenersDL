@@ -1,1 +1,2 @@
-View3D((:Bolt)-[:part]->(:Part))
+View3D
+	(:Bolt)-[:part]->(:Part), (:Nut)-[:part]->(:Part)

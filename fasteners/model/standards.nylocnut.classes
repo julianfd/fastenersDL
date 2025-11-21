@@ -1,0 +1,159 @@
+package standards.nylocnut
+
+import topology.Nut
+import topology.NutStandard
+import standards.thread.ThreadSize
+
+class NylocNut extends Nut {
+	NylocNutStandard standard
+	thread : ThreadSize
+	Dia    : Unit[mm]
+	P      : Unit[mm]
+	da     : Unit[mm]
+	dw     : Unit[mm]
+	e_     : Unit[mm]
+	m      : Unit[mm]
+	h      : Unit[mm]
+	s      : Unit[mm]
+
+	op setParameters(d:ThreadSize) {
+		if (standard === null) throw new IllegalStateException("standard not set")
+		val params = standard.getParameters.get(d)
+		if (params === null)
+			throw new IllegalArgumentException("Thread size " + d + " not covered by " + standard.class)
+		thread = d
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
+		P = params.get(0) * 1[mm]
+		da = params.get(1) * 1[mm]
+		dw = params.get(2) * 1[mm]
+		e_ = params.get(3) * 1[mm]
+		m = params.get(4) * 1[mm]
+		h = params.get(5) * 1[mm]
+		s = params.get(6) * 1[mm]
+	}
+}
+
+interface NylocNutStandard extends NutStandard {
+}
+
+enum NylocNutStandardType {
+	DIN985, ISO7040, ISO7041, ISO10511, ISO10512
+}
+
+// P, da, dw, e, m, h, s
+class DIN985 extends NylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// from FsData/nyloc_def.csv (DIN985def): Dia,P,damax,dw,e,m,h,s_nom
+		// map => P, da, dw, e, m, h, s
+		p.put(ThreadSize.M3, #{0.5, 3.45, 4.6, 6.1, 2.4, 4.0, 5.5})
+		p.put(ThreadSize.M4, #{0.7, 4.60, 5.9, 7.7, 2.9, 5.0, 7.0})
+		p.put(ThreadSize.M5, #{0.8, 5.75, 6.9, 8.9, 3.2, 5.0, 8.0})
+		p.put(ThreadSize.M6, #{1.0, 6.75, 8.9, 11.05, 4.0, 6.0, 10.0})
+		p.put(ThreadSize.M7, #{1.0, 6.75, 9.6, 12.12, 4.7, 7.5, 11.0})
+		p.put(ThreadSize.M8, #{1.25, 8.75, 11.6, 14.5, 5.5, 8.0, 13.0})
+		p.put(ThreadSize.M10, #{1.5, 10.80, 15.6, 17.9, 6.5, 10.0, 16.0})
+		p.put(ThreadSize.M12, #{1.75, 13.00, 17.4, 20.1, 8.0, 12.0, 18.0})
+		p.put(ThreadSize.M14, #{2.00, 15.10, 20.5, 24.5, 9.5, 14.0, 22.0})
+		p.put(ThreadSize.M16, #{2.00, 17.30, 22.5, 26.9, 10.5, 16.0, 24.0})
+		p.put(ThreadSize.M18, #{2.50, 19.50, 24.9, 29.6, 13.0, 18.5, 27.0})
+		p.put(ThreadSize.M20, #{2.50, 21.60, 27.7, 33.7, 14.0, 20.0, 30.0})
+		p.put(ThreadSize.M22, #{2.50, 23.70, 29.5, 37.3, 15.0, 22.0, 34.0})
+		p.put(ThreadSize.M24, #{3.00, 25.90, 33.2, 40.1, 15.0, 24.0, 36.0})
+		p.put(ThreadSize.M27, #{3.00, 29.10, 38.0, 45.2, 17.0, 27.0, 41.0})
+		p.put(ThreadSize.M30, #{3.50, 32.40, 42.7, 50.9, 19.0, 30.0, 46.0})
+		p.put(ThreadSize.M33, #{3.50, 35.60, 46.6, 55.4, 22.0, 33.0, 50.0})
+		p.put(ThreadSize.M36, #{4.00, 38.90, 51.1, 61.0, 25.0, 36.0, 55.0})
+		p.put(ThreadSize.M39, #{4.00, 42.10, 55.9, 66.5, 17.0, 39.0, 60.0})
+		p.put(ThreadSize.M42, #{4.50, 45.40, 60.6, 71.3, 29.0, 42.0, 65.0})
+		p.put(ThreadSize.M45, #{4.50, 48.60, 64.7, 77.0, 32.0, 45.0, 70.0})
+		p.put(ThreadSize.M48, #{5.00, 51.80, 69.4, 82.6, 36.0, 48.0, 75.0})
+		return p
+	}
+}
+
+class ISO7040 extends NylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// columns: P,d_a_max,d_a_min,d_w_min,e_min,h_max,h_min,m_min,m_w_min,s_max,s_min
+		// map => P, da_avg, dw_min, e_min, m_min, h_max, s_max
+		p.put(ThreadSize.M3, #{0.5, 3.225, 4.57, 6.01, 2.15, 4.5, 5.5})
+		p.put(ThreadSize.M4, #{0.7, 4.300, 5.88, 7.66, 2.90, 6.0, 7.0})
+		p.put(ThreadSize.M5, #{0.8, 5.375, 6.88, 8.79, 4.40, 6.8, 8.0})
+		p.put(ThreadSize.M6, #{1.0, 6.375, 8.88, 11.05, 4.90, 8.0, 10.0})
+		p.put(ThreadSize.M8, #{1.25, 8.375, 11.63, 14.38, 6.44, 9.5, 13.0})
+		p.put(ThreadSize.M10, #{1.5, 10.40, 14.63, 17.77, 8.04, 11.9, 16.0})
+		p.put(ThreadSize.M12, #{1.75, 12.50, 16.63, 20.03, 10.37, 14.9, 18.0})
+		p.put(ThreadSize.M14, #{2.0, 14.55, 19.64, 23.36, 12.10, 17.0, 21.0})
+		p.put(ThreadSize.M16, #{2.0, 16.65, 22.49, 26.75, 14.10, 19.1, 24.0})
+		p.put(ThreadSize.M20, #{2.5, 20.80, 27.70, 32.95, 16.90, 22.8, 30.0})
+		p.put(ThreadSize.M24, #{3.0, 24.95, 33.25, 39.55, 20.20, 27.1, 36.0})
+		p.put(ThreadSize.M30, #{3.5, 31.20, 42.75, 50.85, 24.30, 32.6, 46.0})
+		p.put(ThreadSize.M36, #{4.0, 37.45, 51.11, 60.79, 29.40, 38.9, 55.0})
+		return p
+	}
+}
+
+class ISO7041 extends NylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// same columns as ISO7040
+		p.put(ThreadSize.M5, #{0.8, 5.375, 6.88, 8.79, 4.80, 7.2, 8.0})
+		p.put(ThreadSize.M6, #{1.0, 6.375, 8.88, 11.05, 5.40, 8.5, 10.0})
+		p.put(ThreadSize.M8, #{1.25, 8.375, 11.63, 14.38, 7.14, 10.2, 13.0})
+		p.put(ThreadSize.M10, #{1.5, 10.40, 14.63, 17.77, 8.94, 12.8, 16.0})
+		p.put(ThreadSize.M12, #{1.75, 12.50, 16.63, 20.03, 11.57, 16.1, 18.0})
+		p.put(ThreadSize.M14, #{2.0, 14.55, 19.64, 23.36, 13.40, 18.3, 21.0})
+		p.put(ThreadSize.M16, #{2.0, 16.65, 22.49, 26.75, 15.70, 20.7, 24.0})
+		p.put(ThreadSize.M20, #{2.5, 20.80, 27.70, 32.95, 19.00, 25.1, 30.0})
+		p.put(ThreadSize.M24, #{3.0, 24.95, 33.25, 39.55, 22.60, 29.5, 36.0})
+		p.put(ThreadSize.M30, #{3.5, 31.20, 42.75, 50.85, 27.30, 35.6, 46.0})
+		p.put(ThreadSize.M36, #{4.0, 37.45, 51.11, 60.79, 33.10, 42.6, 55.0})
+		return p
+	}
+}
+
+class ISO10511 extends NylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// columns like ISO7040 (thin)
+		p.put(ThreadSize.M3, #{0.5, 3.225, 4.56, 6.01, 1.55, 3.9, 5.5})
+		p.put(ThreadSize.M4, #{0.7, 4.300, 5.90, 7.66, 1.95, 5.0, 7.0})
+		p.put(ThreadSize.M5, #{0.8, 5.375, 6.90, 8.79, 2.45, 5.0, 8.0})
+		p.put(ThreadSize.M6, #{1.0, 6.375, 8.90, 11.05, 2.90, 6.0, 10.0})
+		p.put(ThreadSize.M8, #{1.25, 8.375, 11.60, 14.38, 3.70, 6.76, 13.0})
+		p.put(ThreadSize.M10, #{1.5, 10.40, 14.60, 17.77, 4.70, 8.56, 16.0})
+		p.put(ThreadSize.M12, #{1.75, 12.50, 16.60, 20.03, 5.70, 10.23, 18.0})
+		p.put(ThreadSize.M14, #{2.0, 14.55, 19.60, 23.35, 6.42, 11.32, 21.0})
+		p.put(ThreadSize.M16, #{2.0, 16.65, 22.50, 26.75, 7.42, 12.42, 24.0})
+		p.put(ThreadSize.M20, #{2.5, 20.80, 27.70, 32.95, 9.10, 14.9, 30.0})
+		p.put(ThreadSize.M24, #{3.0, 24.95, 33.20, 39.55, 10.90, 17.8, 36.0})
+		p.put(ThreadSize.M30, #{3.5, 31.20, 42.80, 50.85, 13.90, 22.2, 46.0})
+		p.put(ThreadSize.M36, #{4.0, 37.45, 51.10, 60.79, 16.90, 25.5, 55.0})
+		return p
+	}
+}
+
+class ISO10512 extends NylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// fine pitch; columns like ISO7040
+		p.put(ThreadSize.M8, #{1.0, 8.375, 11.63, 14.38, 6.44, 9.5, 13.0}) // M8x1
+		p.put(ThreadSize.M10, #{1.0, 10.40, 14.63, 17.77, 8.04, 11.9, 16.0}) // M10x1
+		p.put(ThreadSize.M10F, #{1.25, 10.40, 14.63, 17.77, 8.04, 11.9, 16.0}) // M10x1.25
+		p.put(ThreadSize.M12, #{1.25, 12.50, 16.63, 20.03, 10.37, 14.9, 18.0}) // M12x1.25
+		p.put(ThreadSize.M12F, #{1.50, 12.50, 16.63, 20.03, 10.37, 14.9, 18.0}) // M12x1.5
+		p.put(ThreadSize.M14F, #{1.50, 14.55, 19.64, 23.36, 12.10, 17.0, 21.0}) // M14x1.5
+		p.put(ThreadSize.M16F, #{1.50, 16.65, 22.49, 26.75, 14.10, 19.1, 24.0}) // M16x1.5
+		p.put(ThreadSize.M20F, #{1.50, 20.80, 27.70, 32.95, 16.90, 22.8, 30.0}) // M20x1.5
+		p.put(ThreadSize.M24F, #{2.00, 24.95, 33.25, 39.55, 20.20, 27.1, 36.0}) // M24x2
+		p.put(ThreadSize.M30F, #{2.00, 31.20, 42.75, 50.85, 24.30, 32.6, 46.0}) // M30x2
+		p.put(ThreadSize.M36F, #{2.00, 37.45, 51.11, 60.79, 29.40, 38.9, 55.0}) // M36x2
+		return p
+	}
+}

@@ -1,6 +1,6 @@
 package standards.buttonheadscrew
 
-import topology.Standard
+import topology.BoltStandard
 import standards.thread.ThreadSize
 import standards.thread.Length
 import topology.Bolt
@@ -53,7 +53,7 @@ class ButtonHeadScrew extends Bolt {
 	}
 }
 
-interface ButtonHeadStandard extends Standard {
+interface ButtonHeadStandard extends BoltStandard {
 }
 
 enum ButtonHeadStandardType {

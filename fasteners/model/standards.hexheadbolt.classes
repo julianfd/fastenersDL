@@ -1,6 +1,6 @@
 package standards.hexheadbolt
 
-import topology.Standard
+import topology.BoltStandard
 import standards.thread.ThreadSize
 import standards.thread.Length
 import topology.Bolt
@@ -46,7 +46,7 @@ class HexHeadBolt extends Bolt {
 	}
 }
 
-interface HexHeadStandard extends Standard {
+interface HexHeadStandard extends BoltStandard {
 }
 
 enum HexHeadStandardType {

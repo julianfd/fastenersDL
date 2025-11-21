@@ -12,7 +12,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBolt(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:HexHeadStandardType = HexHeadStandardType.ISO4014) //make enum
+rule geometry.createHexHeadBolt(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadStandardType = HexHeadStandardType.ISO4014) //make enum
 do {
 	/*fastere WB hex head standards
 	 * - DIN 933 hex head screws

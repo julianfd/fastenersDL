@@ -1,0 +1,71 @@
+import standards.flangednylocnut.FlangedNylocNut
+import standards.flangednylocnut.FlangedNylocNutStandardType
+import standards.flangednylocnut.ISO12125
+import standards.flangednylocnut.ISO7043
+import standards.thread.ThreadSize
+
+rule geometry.createFlangedNylocNut //(d:ThreadSize = ThreadSize.M8, standard:FlangedNylocNutStandardType = FlangedNylocNutStandardType.ISO7043, threaded:Boolean = true)
+do {
+	val d = ThreadSize.M8
+	val standard = FlangedNylocNutStandardType.ISO7043
+	G+[(nut:FlangedNylocNut)]
+	switch (standard) {
+		case ISO7043: {
+			G+[(nut)-[:standard]->(:ISO7043)]
+		}
+		case ISO12125: {
+			G+[(nut)-[:standard]->(:ISO12125)]
+		}
+	}
+	nut.setParameters(d)
+
+	val Dia = nut.Dia;
+	val P = nut.P;
+	val da = nut.da;
+	val dc = nut.dc;
+	val dw = nut.dw;
+	val e = nut.e_;
+	val m = nut.m;
+	val h = nut.h;
+	val s = nut.s;
+	val c = nut.c;
+	val sqrt3 = sqrt(3);
+	val tan30 = tan(Math.toRadians(30))
+	val di = (Dia - P) / 2
+	val do_ = Dia / 2
+	val dw2 = dw / 2;
+	val da2 = da / 2;
+	val e2 = e / 2;
+	val s2 = s / 2
+	val ch1 = do_ - di
+	val ch2 = (e2 - dw2) * tan30
+	val ch3 = m - (e2 - s2) * tan30
+	val h1 = h * 0.9
+	val r = (s2 - di) / 3
+
+	// nyloc body with flange
+	val face = workplane("XZ").sketch [
+        moveTo(fix(di), fix(ch1)).lineTo(fix(da2), 0)
+        .lineTo(fix(dw2), 0).lineTo(fix(e2), fix(ch2)).lineTo(fix(e2), fix(ch3))
+        .lineTo(fix(s2*0.999), fix(m)).lineTo(fix(s2*0.999), fix(h - r))
+        .tangentArc(fix(r), fix(90))
+        .lineTo(fix(di + r), fix(h)).lineTo(fix(di + r), fix(h1)).lineTo(fix(di), fix(h1)).close
+    ].revolve[axis = Z]
+
+	val hexTool = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h)
+	var nutSolid = face.intersect(hexTool)
+
+	// flange
+	val flangeProfile = workplane("XZ").sketch [
+        moveTo((da + s)/4, 0)
+        .lineTo(dc/2, 0).lineTo(dc/2, c)
+        .lineTo((da + s)/4, c + (dc/2 - (da + s)/4) * tan(Math.toRadians(30))).close
+    ].revolve[axis = Z]
+	nutSolid = nutSolid.union(flangeProfile)
+	show(nutSolid)
+//    if (threaded) {
+//        val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, h + P)
+//        nutSolid = nutSolid.cut(cutter)
+//    }
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_nyloc_nut", nutSolid))
+}

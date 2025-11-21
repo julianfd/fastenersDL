@@ -1,0 +1,85 @@
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+
+import standards.hexnut.DIN6334
+import standards.hexnut.DIN934
+import standards.hexnut.HexNut
+import standards.hexnut.HexNutStandardType
+import standards.hexnut.ISO4032
+import standards.hexnut.ISO4033
+import standards.hexnut.ISO4034
+import standards.hexnut.ISO4035
+import standards.thread.ThreadSize
+
+rule geometry.createHexNut //(d:ThreadSize = ThreadSize.M6, standard:HexNutStandardType = HexNutStandardType.ISO4032, threaded:Boolean = true)
+do {
+
+	val d = ThreadSize.M6
+	val standard = HexNutStandardType.DIN6334
+
+	G+[(nut:HexNut)]
+
+	switch (standard) {
+		case ISO4032: {
+			G+[(nut)-[:standard]->(:ISO4032)];
+		}
+		case ISO4033: {
+			G+[(nut)-[:standard]->(:ISO4033)];
+		}
+		case ISO4034: {
+			G+[(nut)-[:standard]->(:ISO4034)];
+		}
+		case ISO4035: {
+			G+[(nut)-[:standard]->(:ISO4035)];
+		}
+		case DIN934: {
+			G+[(nut)-[:standard]->(:DIN934)];
+		}
+		case DIN6334: {
+			G+[(nut)-[:standard]->(:DIN6334)];
+		}
+		default:
+			throw new IllegalArgumentException("standard not implemented.")
+	}
+
+	nut.setParameters(d)
+	val Dia = nut.Dia
+	val P = nut.P
+	val da = nut.da
+	val m = nut.m
+	val s = nut.s
+
+	val sqrt3 = sqrt(3)
+	val cos30 = cos(Math.toRadians(30))
+	val cham = s * (sqrt3 / 3 - 0.5) * tan(Math.toRadians(22.5))
+	val H = P * cos30
+	val cham_i_delta = da / 2.0 - (Dia / 2.0 - H * 5.0 / 8.0)
+	val cham_i = cham_i_delta * tan(Math.toRadians(15.0))
+
+	val profile = workplane("XZ").sketch [
+		moveTo(fix(Dia/2 - H*5/8), fix(m - cham_i))
+		.lineTo(fix(da/2), fix(m))
+		.lineTo(fix(s/2), fix(m))
+		.lineTo(fix(s/sqrt3), fix(m - cham))
+		.lineTo(fix(s/sqrt3), fix(cham))
+		.lineTo(fix(s/2), fix(0))
+		.lineTo(fix(da/2), fix(0))
+		.lineTo(fix(Dia/2 - H*5/8), fix(cham_i))
+		.close
+	].revolve[axis = Z]
+
+	val hexPrism = workplane("XY").sketch [
+		polygon(6, s / sqrt3 * 2)
+	].extrude(m)
+
+	val nutSolid = profile.intersect(hexPrism)
+	show
+//	if (threaded) {
+//		val threadCutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
+//		nutSolid = nutSolid.cut(threadCutter)
+//	}
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_nut", nutSolid))
+}

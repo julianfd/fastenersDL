@@ -1,7 +1,7 @@
 package topology
 
-import standards.thread.ThreadSize
 import standards.thread.Length
+import standards.thread.ThreadSize
 
 class Bolt {
 	BoltHead head
@@ -16,6 +16,7 @@ class BoltHead {
 
 class Drive {
 
+	// TODO add recess negative shape?
 }
 
 enum RecessType {
@@ -27,10 +28,19 @@ class BoltShaft {
 	Part part
 }
 
-interface Standard {
+class Nut {
+	Part part
+}
 
-//	op setParameters(d:ThreadSize)
+interface Standard {
 	op getParameters() : Map<ThreadSize, List<Double>>
+}
+
+interface NutStandard extends Standard {
+
+}
+
+interface BoltStandard extends Standard {
 
 	op getAllowedRange(thread:ThreadSize) : List<Length>
 

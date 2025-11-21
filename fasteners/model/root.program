@@ -1,11 +1,16 @@
 program root {
-//rule importCsv
-	rule geometry.createCountersunkHeadScrew
-	rule geometry.createRaisedCountersunkScrew
-	rule geometry.createButtonHeadScrewWithFlange
-	rule geometry.createButtonHeadScrew
-	rule geometry.createHexHeadBoltWithFlange
-	rule geometry.createCylinderHeadBolt
+	rule geometry.createHexNut
+	rule geometry.createFlangedHexNut
+	rule geometry.createNylocNut
+	rule geometry.createCapNut
+	rule geometry.createSquareNut
+//	rule geometry.createCountersunkHeadScrew
+//	rule geometry.createRaisedCountersunkScrew
+//	rule geometry.createButtonHeadScrewWithFlange
+//	rule geometry.createButtonHeadScrew
+//	rule geometry.createHexHeadBoltWithFlange
+//	rule geometry.createCylinderHeadBolt
 	rule geometry.createHexHeadBolt
+//	rule geometry.createPanHeadScrew
 //	rule test
 }

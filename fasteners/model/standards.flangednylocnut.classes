@@ -1,0 +1,80 @@
+package standards.flangednylocnut
+
+import topology.Nut
+import topology.NutStandard
+import standards.thread.ThreadSize
+
+class FlangedNylocNut extends Nut {
+	FlangedNylocNutStandard standard
+	thread : ThreadSize
+	Dia    : Unit[mm]
+	P      : Unit[mm]
+	da     : Unit[mm]
+	dc     : Unit[mm]
+	dw     : Unit[mm]
+	e_     : Unit[mm]
+	m      : Unit[mm] // metal thickness
+	h      : Unit[mm] // total height incl nylon
+	s      : Unit[mm]
+	c      : Unit[mm]
+
+	op setParameters(d:ThreadSize) {
+		if (standard === null) throw new IllegalStateException("standard not set")
+		val params = standard.getParameters.get(d)
+		if (params === null) throw new IllegalArgumentException(
+			"Thread size " + d + " not covered by " + standard.class)
+		thread = d
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
+		P = params.get(0) * 1[mm]
+		da = params.get(1) * 1[mm]
+		dc = params.get(2) * 1[mm]
+		dw = params.get(3) * 1[mm]
+		e_ = params.get(4) * 1[mm]
+		m = params.get(5) * 1[mm]
+		h = params.get(6) * 1[mm]
+		s = params.get(7) * 1[mm]
+		c = params.get(8) * 1[mm]
+	}
+}
+
+interface FlangedNylocNutStandard extends NutStandard {
+}
+
+enum FlangedNylocNutStandardType {
+	ISO7043, ISO12125
+}
+
+// P, da_avg, dc, dw_min, e_min, m_min, h_max, s_max, c_min
+class ISO7043 extends FlangedNylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// FsData/iso7043def.csv
+		p.put(ThreadSize.M5, #{0.8, 5.375, 11.8, 9.8, 8.79, 4.7, 7.1, 8.0, 1.0})
+		p.put(ThreadSize.M6, #{1.0, 6.375, 14.2, 12.2, 11.05, 5.7, 9.1, 10.0, 1.1})
+		p.put(ThreadSize.M8, #{1.25, 8.375, 17.9, 15.8, 14.38, 7.64, 11.1, 13.0, 1.2})
+		p.put(ThreadSize.M10, #{1.5, 10.40, 21.8, 19.6, 16.64, 9.64, 13.5, 15.0, 1.5})
+		p.put(ThreadSize.M12, #{1.75, 12.50, 26.0, 23.8, 20.03, 11.57, 16.1, 18.0, 1.8})
+		p.put(ThreadSize.M14, #{2.0, 14.55, 29.9, 27.6, 23.36, 13.30, 18.2, 21.0, 2.1})
+		p.put(ThreadSize.M16, #{2.0, 16.65, 34.5, 31.9, 26.75, 15.30, 20.3, 24.0, 2.4})
+		p.put(ThreadSize.M20, #{2.5, 20.80, 42.8, 39.9, 32.95, 18.70, 24.8, 30.0, 3.0})
+		return p
+	}
+}
+
+class ISO12125 extends FlangedNylocNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// FsData/iso12125def.csv (fine pitch) using avg d_a
+		p.put(ThreadSize.M8, #{1.0, 8.375, 17.9, 15.8, 14.38, 7.64, 11.1, 13.0, 1.2}) // M8x1
+		p.put(ThreadSize.M10, #{1.0, 10.40, 21.8, 19.6, 16.64, 9.64, 13.5, 15.0, 1.5}) // M10x1
+		p.put(ThreadSize.M10F, #{1.25, 10.40, 21.8, 19.6, 16.64, 9.64, 13.5, 15.0, 1.5}) // M10x1.25
+		p.put(ThreadSize.M12, #{1.5, 12.50, 26.0, 23.8, 20.03, 11.57, 16.1, 18.0, 1.8}) // M12x1.5
+		p.put(ThreadSize.M12F, #{1.25, 12.50, 26.0, 23.8, 20.03, 11.57, 16.1, 18.0, 1.8}) // M12x1.25
+		p.put(ThreadSize.M14F, #{1.5, 14.55, 29.9, 27.6, 23.36, 13.30, 18.2, 21.0, 2.1}) // M14x1.5
+		p.put(ThreadSize.M16F, #{1.5, 16.65, 34.5, 31.9, 26.75, 15.30, 20.3, 24.0, 2.4}) // M16x1.5
+		p.put(ThreadSize.M20F, #{1.5, 20.80, 42.8, 39.9, 32.95, 18.70, 24.8, 30.0, 3.0}) // M20x1.5
+		return p
+	}
+}

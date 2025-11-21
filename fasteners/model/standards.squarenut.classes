@@ -1,0 +1,73 @@
+package standards.squarenut
+
+import topology.Nut
+import topology.NutStandard
+import standards.thread.ThreadSize
+
+class SquareNut extends Nut {
+	SquareNutStandard standard
+	thread     : ThreadSize
+	Dia        : Unit[mm]
+	P          : Unit[mm]
+	s          : Unit[mm]
+	m          : Unit[mm]
+	dw         : Unit[mm]
+	topChamfer : Boolean
+
+	op setParameters(d:ThreadSize) {
+		if (standard === null) throw new IllegalStateException("standard not set")
+		val params = standard.getParameters.get(d)
+		if (params === null)
+			throw new IllegalArgumentException("Thread size " + d + " not covered by " + standard.class)
+		thread = d
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
+		P = params.get(0) * 1[mm]
+		s = params.get(1) * 1[mm]
+		m = params.get(2) * 1[mm]
+		dw = params.get(3) * 1[mm]
+		topChamfer = params.get(4) > 0
+	}
+}
+
+interface SquareNutStandard extends NutStandard {
+}
+
+enum SquareNutStandardType {
+	DIN557, DIN562
+}
+
+// P, s, m, dw, chamferFlag
+class DIN557 extends SquareNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// FsData/square_nut_def.csv (DIN557def): Dia,s,m,dw,P
+		// map => P, s, m, dw, chamferFlag(1)
+		p.put(ThreadSize.M4, #{0.7, 7.0, 3.2, 5.7, 1.0})
+		p.put(ThreadSize.M5, #{0.8, 8.0, 4.0, 6.7, 1.0})
+		p.put(ThreadSize.M6, #{1.0, 10.0, 5.0, 8.7, 1.0})
+		p.put(ThreadSize.M8, #{1.25, 13.0, 6.5, 11.5, 1.0})
+		p.put(ThreadSize.M10, #{1.50, 17.0, 8.0, 15.5, 1.0})
+		p.put(ThreadSize.M12, #{1.75, 19.0, 10.0, 17.2, 1.0})
+		p.put(ThreadSize.M16, #{2.00, 24.0, 13.0, 22.0, 1.0})
+		return p
+	}
+}
+
+class DIN562 extends SquareNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// FsData/square_nut_def.csv (DIN562def): Dia,s,m,dw,P
+		p.put(ThreadSize.M1_6, #{0.35, 3.2, 1.0, 1.25, 0.0})
+		p.put(ThreadSize.M2, #{0.40, 4.0, 1.2, 1.60, 0.0})
+		p.put(ThreadSize.M2_5, #{0.45, 5.0, 1.6, 2.05, 0.0})
+		p.put(ThreadSize.M3, #{0.50, 5.5, 1.8, 2.50, 0.0})
+		p.put(ThreadSize.M4, #{0.70, 7.0, 2.2, 3.30, 0.0})
+		p.put(ThreadSize.M5, #{0.80, 8.0, 2.7, 4.20, 0.0})
+		p.put(ThreadSize.M6, #{1.00, 10.0, 3.2, 5.00, 0.0})
+		p.put(ThreadSize.M8, #{1.25, 13.0, 4.0, 6.80, 0.0})
+		p.put(ThreadSize.M10, #{1.50, 17.0, 5.0, 8.50, 0.0})
+		return p
+	}
+}

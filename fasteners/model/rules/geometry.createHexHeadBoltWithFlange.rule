@@ -14,7 +14,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071) // make enum
+rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071) // make enum
 // Translated from FsFunctions/FSmakeHexHeadWithFlange.py
 // Supported: ISO 4162, ISO 15071, ISO 15072, EN 1662, EN 1665, ASMEB18.2.1.8
 // Builds a flanged hex head by revolving the profile generated below and
@@ -105,13 +105,9 @@ do {
 	val unthreadedRunout = length - threadLimit
 
 	val shaftGeo = workplane("XZ").sketch [
-        moveTo(fix(0.0), fix(0.0))
-        .lineTo(fix(0.0), fix(-length))
-        .lineTo(fix(dia * 0.4), fix(-length))
-        .lineTo(fix(dia / 2.0), fix(-length + dia / 10.0))
-        .lineTo(fix(dia / 2.0), fix(-unthreadedRunout))
-        .tangentArc(r1, -90)
-        .close
+        lineTo(dia / 2.0 + r1, 0.0).polarArc(180, r1, 90)
+		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
+		.lineTo(0, -length).close
     ].revolve[axis = Z]
 	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
 	boltShaft.part = part(partDefinition(partID + "_" + length.doubleValue + "_shaft", shaftGeo))

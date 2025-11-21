@@ -1,7 +1,7 @@
 package standards.thread
 
 enum ThreadSize {
-	M1_6, M2, M2_5, M3, M3_5, M4, M5, M6, M8, M10, M12, M14, M16, M18, M20, M22, M24, M27, M30, M33, M36, M39, M42, M45, M48, M56, M52, M60, M64
+	M1, M1_2, M1_4, M1_6, M1_7, M2, M2_3, M2_5, M2_6, M3, M3_5, M4, M5, M6, M7, M8, M10, M12, M14, M16, M18, M20, M22, M24, M27, M30, M33, M36, M39, M42, M45, M48, M56, M52, M60, M64, M10F, M12F, M14F, M16F, M20F, M24F, M30F, M36F
 }
 
 enum Length {

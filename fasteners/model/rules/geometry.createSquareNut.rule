@@ -1,0 +1,53 @@
+import standards.squarenut.DIN557
+import standards.squarenut.DIN562
+import standards.squarenut.SquareNut
+import standards.squarenut.SquareNutStandardType
+import standards.thread.ThreadSize
+
+rule geometry.createSquareNut //(d:ThreadSize = ThreadSize.M6, standard:SquareNutStandardType = SquareNutStandardType.DIN557, threaded:Boolean = true)
+do {
+	val d = ThreadSize.M6
+	val standard = SquareNutStandardType.DIN557
+
+	G+[(nut:SquareNut)]
+	switch (standard) {
+		case DIN557: {
+			G+[(nut)-[:standard]->(:DIN557)]
+		}
+		case DIN562: {
+			G+[(nut)-[:standard]->(:DIN562)]
+		}
+	}
+	nut.setParameters(d)
+	val Dia = nut.Dia;
+	val P = nut.P;
+	val s = nut.s;
+	val m = nut.m;
+	val dw = nut.dw;
+	val tan15 = tan(Math.toRadians(15));
+	val sqrt3 = sqrt(3)
+
+	var nutSolid = workplane.box(s, s, m, [centered = #{true, true, false}])
+
+	val do_ = Dia * 1.1
+	val inner_rad = Dia / 2 - P * 0.625 * sqrt3 / 2
+	val inner_cham = tan15 * (do_ / 2 - inner_rad)
+	val hole = workplane("XZ").sketch [
+        moveTo(0, 0).lineTo(do_/2, 0).lineTo(inner_rad, inner_cham)
+        .lineTo(inner_rad, m - inner_cham).lineTo(do_/2, m).lineTo(0, m).close
+    ].revolve[axis = Z]
+	nutSolid = nutSolid.cut(hole)
+
+	if (nut.topChamfer) {
+		val cham = workplane.cone(dw / 2 + m * sqrt3, dw / 2, m)
+		nutSolid = nutSolid.intersect(cham)
+	}
+	show(nutSolid)
+
+//    if (threaded) {
+//        val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
+//        nutSolid = nutSolid.cut(cutter)
+//    }
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_square_nut", nutSolid))
+
+}

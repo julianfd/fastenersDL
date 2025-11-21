@@ -1,12 +1,12 @@
 package standards.countersunkheadscrew
 
-import topology.Standard
+import topology.BoltStandard
 import standards.thread.ThreadSize
 import standards.thread.Length
 import topology.Bolt
 import topology.RecessType
 
-interface CountersunkStandard extends Standard {
+interface CountersunkStandard extends BoltStandard {
 
 	op getRecessType() : RecessType
 
