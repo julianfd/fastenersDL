@@ -111,8 +111,8 @@ do {
         ].revolve[axis = Z].rotate[axis = Z angle = 180]
 	}
 	if (cutThread) {
-//		shaftGeo = headGeo.faces[Q < Z].workplane.cylinder(dia / 2, length, [combine = false]).
-//			translate(0, 0, -length / 2)
+		shaftGeo = headGeo.faces[Q < Z].workplane.cylinder(dia / 2, length, [combine = false]).
+			translate(0, 0, -length / 2)
 		if (chamferedEnd) {
 			shaftGeo.edges[Q < Z].chamfer(0.1 * dia)
 		}

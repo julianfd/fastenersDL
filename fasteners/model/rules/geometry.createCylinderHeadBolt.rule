@@ -85,9 +85,6 @@ do {
 
 	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
 
-	// in case of partially threaded fastener
-	if (length - r > b) {
-	}
 	var shaftGeo = workplane("XZ").sketch [
 		lineTo(dia / 2.0 + r, 0.0).polarArc(180, r, 90)
 		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
@@ -95,7 +92,7 @@ do {
 	].revolve[axis = Z].rotate[axis = Z angle = 180]
 
 	if (cutThread) {
-//		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2)
+		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2)
 		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length)
 		shaftGeo = shaftGeo.cut(threadCutter)
 	}
