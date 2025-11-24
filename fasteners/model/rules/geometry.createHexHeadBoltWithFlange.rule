@@ -14,7 +14,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071) // make enum
+rule geometry.createHexHeadBoltWithFlange(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadWithFlangeStandardType = HexHeadWithFlangeStandardType.ISO15071, cutThread:Boolean = true) // make enum
 // Translated from FsFunctions/FSmakeHexHeadWithFlange.py
 // Supported: ISO 4162, ISO 15071, ISO 15072, EN 1662, EN 1665, ASMEB18.2.1.8
 // Builds a flanged hex head by revolving the profile generated below and
@@ -63,12 +63,9 @@ do {
 	val r1 = bolt.r1
 	val s = bolt.s
 
-	var threadLimit = b0
-	if (length < b0) {
-		threadLimit = length - r1
-	} else if (standard != "ASMEB18.2.1.8") {
-		threadLimit = if(length <= 125.0) b1 else if(length <= 200.0) b2 else b3
-	}
+	val threadLimit = if(length <= b0) length - r1 else if(length <= 125.0) b1 else if(length <= 200.0) b2 else b3
+	val maxUsableThread = max(0.0, length - r1)
+	val threadLength = min(threadLimit, maxUsableThread).doubleValue
 
 	val chamfer = s * (2.0 / sqrt3 - 1.0) * sin(Math.toRadians(25.0))
 	val arc1X = dc / 2.0 - c / 2.0 + (c / 2.0) * sin(beta)
@@ -104,16 +101,25 @@ do {
 
 	val unthreadedRunout = length - threadLimit
 
-	val shaftGeo = workplane("XZ").sketch [
-        lineTo(dia / 2.0 + r1, 0.0).polarArc(180, r1, 90)
-		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
+	var shaftGeo = workplane("XZ").sketch [
+        lineTo(dia / 2.0 + r1, 0.0)
+        .polarArc(180, r1, 90)
+		.lineTo(dia/2, -length + dia /10)
+		.lineTo(dia *4 /10, -length)
 		.lineTo(0, -length).close
-    ].revolve[axis = Z]
+    ].revolve[axis = Z].rotate[axis = Z angle = 180]
+
+	if (cutThread) {
+//		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2).edges[Q < Z].chamfer(0.1 * dia)
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, threadLength).
+			translate(0.0, 0.0, - (length - threadLength))
+		part("debug thread", threadCutter)
+		shaftGeo = shaftGeo.cut(threadCutter)
+	}
 	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
 	boltShaft.part = part(partDefinition(partID + "_" + length.doubleValue + "_shaft", shaftGeo))
 
 	val boltGeo = headGeo.union(shaftGeo)
-	show
 //    val threadLength = min(threadLimit, length - r1)
 //    val threadCutter = geometry.createBlindThreadCutter(dia, P, threadLength)
 //        .translate(#[0.0, 0.0, - (length - threadLength)])

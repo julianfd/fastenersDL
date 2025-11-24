@@ -1,17 +1,17 @@
 import standards.buttonheadscrew.ButtonHeadScrew
 import standards.buttonheadscrew.ButtonHeadStandardType
 import standards.buttonheadscrew.ISO7380_1
+import standards.thread.Length
 import standards.thread.ThreadSize
 import topology.BoltHead
 import topology.BoltShaft
-import standards.thread.Length
 
 /**
  * @match
  * @do
  * @precondition
  */
-rule geometry.createButtonHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:ButtonHeadStandardType = ButtonHeadStandardType.ISO7380_1)
+rule geometry.createButtonHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:ButtonHeadStandardType = ButtonHeadStandardType.ISO7380_1, cutThread:Boolean = true)
 do {
 	G+[
 		(bolt:ButtonHeadScrew)-[:head]->(buttonHead:BoltHead)
@@ -67,18 +67,23 @@ do {
 //		threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
 //		screw = screw.cut(threadCutter)
 //	}
-	val shaftProfile = workplane("XZ").sketch [
+	var shaftGeo = workplane("XZ").sketch [
         lineTo(dia / 2.0 + r, 0.0)
         .polarArc(180, r, 90)
         .lineTo(dia / 2.0, -length + dia / 10.0)
         .lineTo(dia * 0.4, -length)
         .lineTo(0.0, -length)
         .close
-    ]
+    ].revolve[axis = Z].rotate[axis = Z angle = 180]
 
-	val shaft = shaftProfile.revolve[axis = Z]
+	if (cutThread) {
+//		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2).edges[Q < Z].chamfer(0.1 * dia)
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length).
+			translate(0.0, 0.0, -(length - threadLength))
+		shaftGeo = shaftGeo.cut(threadCutter)
+	}
 
 	buttonHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headSolid))
-	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaft))
-	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, screw.union(shaft)))
+	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))
+	bolt.part = part(partDefinition(standard.toString + "_" + d + "_" + length.doubleValue, screw.union(shaftGeo)))
 }

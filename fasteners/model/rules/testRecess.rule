@@ -3,7 +3,7 @@
  * @do
  * @precondition
  */
-rule test
+rule testRecess
 do {
 	// hexagon recess
 //	val width = 5.06
@@ -143,10 +143,10 @@ do {
 //	}
 //
 //	show(crossGeo, PntC0, PntC1, PntC3, PntC5, PntC7, PntC9)
-	val width = 1.66[mm]
-	val depth = 1.4[mm]
-	val headDiameter = 12.6[mm]
-	val slot = workplane.box(headDiameter + 10.0, width, depth * 2)
-
-	show
+//	val width = 1.66[mm]
+//	val depth = 1.4[mm]
+//	val headDiameter = 12.6[mm]
+//	val slot = workplane.box(headDiameter + 10.0, width, depth * 2)
+//
+//	show
 }

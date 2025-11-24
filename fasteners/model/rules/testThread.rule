@@ -1,0 +1,202 @@
+import geo.GeoParameterClasses.SweepTransition
+import geo.Wire
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule testThread
+do {
+	val dia = 6.0
+	val P = 1.0
+	var blen = 6.0
+	val r = P / 2
+	val length = blen
+	val sqrt3 = sqrt(3)
+
+	val H = sqrt3 / 2 * P
+	val trotations = blen / P + 2.0
+	val fillet_r = P * sqrt3 / 12
+	val helix_height = trotations * P
+	val dia2 = dia / 2
+
+	val profile = workplane().sketch [
+		moveTo(sqrt3 * 3 / 80 * P, -0.475 * P)
+		.lineTo( - 0.625 * H, -1 * P / 8)
+		.threePointArc(#[ - 0.625 * H - 0.5 * fillet_r, 0], #[ - 0.625 * H, P / 8])
+		.lineTo( sqrt3 * 3 / 80 * P, 0.475 * P)
+		.close
+	].wires.first
+	var helix = geo.Wire.makeHelix(P, helix_height, dia / 2 + sqrt3 * 3 / 80 * P).rotate[axis = Z angle = 180] as Wire // .translate(0, 0, -helix_height) as geo.Wire
+	val leadOutR = dia / 2 + 0.55 * (5 / 8 * H + 0.5 * fillet_r)
+	var helixLeadOut = geo.Wire.makeHelix(P, - P / 2, leadOutR + sqrt3 * 3 / 80 * P)
+	helixLeadOut = helixLeadOut.translate(0.55 * (-1 * (5 / 8 * H + 0.5 * fillet_r)), 0, 0).
+		rotate[axis = Z angle = 180] as Wire
+	helix = helix.add(helixLeadOut).rotate[axis = X angle = 180] as Wire
+
+	// val leadOutSweep = 
+	val guides = list
+
+	guides.add(helix.translate(0, 0, -0.475 * P))
+	guides.add(helix.translate(0, 0, 0.475 * P))
+	val profiles = list
+	val profPerTurn = 4
+	val noProfiles = trotations * profPerTurn
+	for (var i = 0; i <= noProfiles; i++) {
+//		val t = i / profPerTurn
+//		val dZ = i * P / profPerTurn
+//		val theta = 360.0 * t
+//		val trafo = trafoMatrix
+//		trafo.rotation.ZRot = theta
+//		trafo.position = #[0, 0, dZ]
+//		profiles.add(profile.moved(trafo))
+		var param = i * 1 / noProfiles
+//		if(i == 0) param = 0.01
+//		if(i == 1) param = 0.99
+		val locOrig = helix.positionAt(param)
+		val tan = helix.tangentAt(param)
+		val locNorm = #[tan.x, tan.y, tan.z]
+		val locX = locOrig.subtract(#[0, 0, locOrig.z])
+		val locCoords = plane[origin = locOrig normal = locNorm xDir = locX]
+		profiles.add(profile.moved(locCoords.location))
+	}
+
+	// leadOutsweeep
+//	val leadProfiles = list
+//	for (var i = 0; i <= 3; i++) {
+////		val t = i / profPerTurn
+////		val dZ = i * P / profPerTurn
+////		val theta = 360.0 * t
+////		val trafo = trafoMatrix
+////		trafo.rotation.ZRot = theta
+////		trafo.position = #[0, 0, dZ]
+////		profiles.add(profile.moved(trafo))
+//		var param = i * 1 / 3
+////		if(i == 0) param = 0.01
+////		if(i == 1) param = 0.99
+//		val locOrig = helixLeadOut.positionAt(param)
+//		val tan = helixLeadOut.tangentAt(param)
+//		val locNorm = #[tan.x, tan.y, 0]
+//		val locX = locOrig.subtract(#[0, 0, locOrig.z])
+//		val locCoords = plane[origin = locOrig normal = locNorm xDir = locX]
+//		leadProfiles.add(profile.moved(locCoords.location))
+//	}
+//
+//	val leadGuides = list
+//	leadGuides.add(helixLeadOut.translate(0, 0, -0.475 * P))
+//	leadGuides.add(helixLeadOut.translate(0, 0, 0.475 * P))
+//	val leadOutR2 = dia / 2 + 0.55 * (5 / 8 * H + 0.5 * fillet_r) - 0.625 * H - 0.5 * fillet_r
+//	var helixLeadOut2 = geo.Wire.makeHelix(P, - P / 2, leadOutR2 + sqrt3 * 3 / 80 * P).translate(
+//		dia / 2 - leadOutR, 0, 0) as Wire
+//	leadGuides.add(helixLeadOut2)
+//	show(leadProfiles, leadGuides)
+//	val leadSweep = geo.Solid.makeLoftGordon(
+//		leadProfiles,
+//		leadGuides
+//	)
+//	show(profiles.get(0), helix)
+	val sweep = geo.Solid //
+	.sweep(
+		profiles.get(0) as Wire,
+		#{},
+		helix,
+		[transition = SweepTransition.RIGHT mode = true]
+//	.makeLoft(
+//		#{profiles.get(0)},
+//		helix
+	)
+	show
+
+	val threadCut = geo.Solid.makeLoftGordon(
+//		#{profiles.get(0)},
+		profiles,
+		guides
+//helix
+	).translate(#[0.0, 0.0, - P * 3 / 4])
+	show(threadCut)
+
+//	val profile = workplane().sketch [
+////		moveTo(dia2 + sqrt3 * 3 / 80 * P, -0.475 * P)
+////		.lineTo(dia2 - 0.625 * H, -1 * P / 8)
+////		.threePointArc(#[dia2 - 0.625 * H - 0.5 * fillet_r, 0], #[dia2 - 0.625 * H, P / 8])
+////		.lineTo(dia2 + sqrt3 * 3 / 80 * P, 0.475 * P)
+////		.lineTo(dia2 + sqrt3 * 3 / 80 * P, -0.475 * P)
+//		moveTo(sqrt3 * 3 / 80 * P, -0.475 * P)
+//		.lineTo( - 0.625 * H, -1 * P / 8)
+//		.threePointArc(#[ - 0.625 * H - 0.5 * fillet_r, 0], #[ - 0.625 * H, P / 8])
+//		.lineTo( sqrt3 * 3 / 80 * P, 0.475 * P)
+//		.close
+//	].wires.first // .translate(#[0, 0, -helix_height]).wires.first
+////	show()
+//	val profiles = list
+//	var helix = geo.Wire.makeHelix(P, helix_height, dia / 2) // .translate(0, 0, -helix_height) as geo.Wire
+//	val leadOutR = dia / 2 + 0.55 * (5 / 8 * H + 0.5 * fillet_r)
+//	var helixLeadOut = geo.Wire.makeHelix(P, - P / 2, leadOutR)
+//	helixLeadOut = helixLeadOut.translate(dia / 2 - leadOutR, 0, 0) as Wire
+//
+//	helix = helix.add(helixLeadOut).rotate[axis = X angle = 180] as Wire
+////	show(helix)
+//	val profPerTurn = 4
+//	val noProfiles = trotations * profPerTurn
+//	for (var i = 0; i <= noProfiles; i++) {
+////		val t = i / profPerTurn
+////		val dZ = i * P / profPerTurn
+////		val theta = 360.0 * t
+////		val trafo = trafoMatrix
+////		trafo.rotation.ZRot = theta
+////		trafo.position = #[0, 0, dZ]
+////		profiles.add(profile.moved(trafo))
+//		if (i == noProfiles) {
+//			val param = i * 1 / noProfiles
+//			val locOrig = helix.endPoint
+//			val locNorm = helix.tangentAt(1)
+//			val locX = locOrig.sub(#[0, 0, locOrig.z])
+//			val locCoords = plane[origin = locOrig normal = locNorm xDir = locX]
+//		}
+//		val param = i * 1 / noProfiles
+//		val locOrig = helix.positionAt(param)
+//		val locNorm = helix.tangentAt(param)
+//		val locX = locOrig.sub(#[0, 0, locOrig.z])
+//		val locCoords = plane[origin = locOrig normal = locNorm xDir = locX]
+////		val prof = workplane(locCoords).sketch [
+////		moveTo(sqrt3 * 3 / 80 * P, -0.475 * P)
+////		.lineTo( - 0.625 * H, -1 * P / 8)
+////		.threePointArc(#[ - 0.625 * H - 0.5 * fillet_r, 0], #[ - 0.625 * H, P / 8])
+////		.lineTo( sqrt3 * 3 / 80 * P, 0.475 * P)
+////		.close
+////		]
+//		profiles.add(profile.moved(locCoords.location))
+//	}
+////	show(profiles, helix)
+////val        fm = FastenerBase.FSFaceMaker()
+////val        fm.AddPoint(dia2 + sqrt3 * 3 / 80 * P, -0.475 * P)
+////val        fm.AddPoint(dia2 - 0.625 * H, -1 * P / 8)
+////val        fm.AddArc(dia2 - 0.625 * H - 0.5 * fillet_r,
+////val                  0, dia2 - 0.625 * H, P / 8)
+////val        fm.AddPoint(dia2 + sqrt3 * 3 / 80 * P, 0.475 * P)
+////val        thread_profile_wire = fm.GetClosedWire()
+////val        thread_profile_wire.translate(Base.Vector(0, 0, -1 * helix_height))
+//	val threadCut = geo.Solid.makeLoft(#{profiles.get(0)}, helix).translate(0, 0, -P * 3 / 4)
+//
+//	var shaftGeo = workplane("XZ").sketch [
+//		lineTo(dia / 2.0 + r, 0.0).polarArc(180, r, 90)
+//		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
+//		.lineTo(0, -length).close
+//	].revolve[axis = Z]
+//
+////	val shaft = workplane.cylinder(dia2, blen).translate(0, 0, -blen / 2).edges[Q < Z].chamfer(P)
+//	val result = shaftGeo.cut(threadCut)
+//	show(shaftGeo, threadCut, result)
+}
+
+op makeHelixWithLeadOut(P:Double, dia:Double, helix_height:Double) : Wire {
+	val sqrt3 = sqrt(3)
+	val H = sqrt3 / 2 * P
+	val fillet_r = P * sqrt3 / 12
+	var helix = geo.Wire.makeHelix(P, helix_height, dia / 2 + sqrt3 * 3 / 80 * P) // .translate(0, 0, -helix_height) as geo.Wire
+	val leadOutR = dia / 2 + 0.55 * (5 / 8 * H + 0.5 * fillet_r)
+	var helixLeadOut = geo.Wire.makeHelix(P, - P / 2, leadOutR + sqrt3 * 3 / 80 * P)
+	helixLeadOut = helixLeadOut.translate(dia / 2 - leadOutR, 0, 0) as Wire
+	helix = helix.add(helixLeadOut).rotate[axis = X angle = 180] as Wire
+}

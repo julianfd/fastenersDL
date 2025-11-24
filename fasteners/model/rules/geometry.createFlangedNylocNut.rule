@@ -19,53 +19,108 @@ do {
 	}
 	nut.setParameters(d)
 
-	val Dia = nut.Dia;
-	val P = nut.P;
-	val da = nut.da;
-	val dc = nut.dc;
-	val dw = nut.dw;
-	val e = nut.e_;
-	val m = nut.m;
-	val h = nut.h;
-	val s = nut.s;
-	val c = nut.c;
-	val sqrt3 = sqrt(3);
+	val dia = nut.Dia
+	val P = nut.P
+	val c = nut.c
+	val dc = nut.dc
+	val h = nut.h
+	val m = nut.m
+	val s = nut.s
+	val sqrt3 = sqrt(3)
 	val tan30 = tan(Math.toRadians(30))
-	val di = (Dia - P) / 2
-	val do_ = Dia / 2
-	val dw2 = dw / 2;
-	val da2 = da / 2;
-	val e2 = e / 2;
-	val s2 = s / 2
-	val ch1 = do_ - di
-	val ch2 = (e2 - dw2) * tan30
-	val ch3 = m - (e2 - s2) * tan30
-	val h1 = h * 0.9
-	val r = (s2 - di) / 3
 
-	// nyloc body with flange
-	val face = workplane("XZ").sketch [
-        moveTo(fix(di), fix(ch1)).lineTo(fix(da2), 0)
-        .lineTo(fix(dw2), 0).lineTo(fix(e2), fix(ch2)).lineTo(fix(e2), fix(ch3))
-        .lineTo(fix(s2*0.999), fix(m)).lineTo(fix(s2*0.999), fix(h - r))
-        .tangentArc(fix(r), fix(90))
-        .lineTo(fix(di + r), fix(h)).lineTo(fix(di + r), fix(h1)).lineTo(fix(di), fix(h1)).close
-    ].revolve[axis = Z]
+	// main hex body
+	var shape = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h)
 
-	val hexTool = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h)
-	var nutSolid = face.intersect(hexTool)
+	// nylon insert representation
+	val insertFace = workplane("XZ").sketch [
+        moveTo(0, h - 0.5 * P).lineTo(1.05 * dia / 2, h - 0.5 * P)
+        .lineTo(1.05 * dia / 2, h).lineTo(0.95 * s / 2 - 0.5 * P, h)
+        .tangentArc(-0.5 * P, -90)
+        .lineTo(0.95 * s / 2, m).lineTo(0.95 * s / 2 + m, 0.0).lineTo(0.0, 0.0).close
+    ]
+	show
+	val insertCommon = insertFace.revolve[axis = Z]
+	shape = shape.intersect(insertCommon)
 
 	// flange
-	val flangeProfile = workplane("XZ").sketch [
-        moveTo((da + s)/4, 0)
-        .lineTo(dc/2, 0).lineTo(dc/2, c)
-        .lineTo((da + s)/4, c + (dc/2 - (da + s)/4) * tan(Math.toRadians(30))).close
-    ].revolve[axis = Z]
-	nutSolid = nutSolid.union(flangeProfile)
-	show(nutSolid)
-//    if (threaded) {
-//        val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, h + P)
-//        nutSolid = nutSolid.cut(cutter)
-//    }
-	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_nyloc_nut", nutSolid))
+	val flangeFace = workplane("XZ").sketch [
+        moveTo((1.05 * dia + s) / 4, 0.0)
+        .lineTo((dc + sqrt3 * c) / 2, 0.0)
+        .lineTo((dc - c) / 2, 0.0)
+        .tangentArc(c / 2, 150)
+        .lineTo(
+            (1.05 * dia + s) / 4, sqrt3 / 3 * ((dc - c) / 2 + c / (4 - 2 * sqrt3) - (1.05 * dia + s) / 4)
+        ).close
+    ]
+	val flange = flangeFace.revolve[axis = Z]
+	shape = shape.union(flange)
+
+	// internal bore + chamfer
+//    val id = rule GeometryUtil.op.innerThreadMinDiameter(dia, P, 0.0)
+//    val boreChamHt = (dia * 1.05 - id) / 2 * tan(Math.toRadians(15))
+//    val boreFace = workplane("XZ").sketch[
+//        moveTo(0,0).lineTo(dia * 1.05 / 2, 0).lineTo(id / 2, boreChamHt).lineTo(id / 2, h).lineTo(0,h).close
+//    ]
+//    val bore = boreFace.revolve[axis = Z]
+//    shape = shape.cut(bore)
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_nyloc_nut", shape))
+//    .revolve[axis = Z]
+//	val Dia = nut.Dia;
+//	val P = nut.P;
+//	val da = nut.da;
+//	val dc = nut.dc;
+//	val dw = nut.dw;
+//	val e = nut.e_;
+//	val m = nut.m;
+//	val h = nut.h;
+//	val s = nut.s;
+//	val c = nut.c;
+//	val sqrt3 = sqrt(3);
+//	val tan30 = tan(Math.toRadians(30))
+//	val di = (Dia - P) / 2
+//	val do_ = Dia / 2
+//	val dw2 = dw / 2;
+//	val da2 = da / 2;
+//	val e2 = e / 2;
+//	val s2 = s / 2
+//	val ch1 = do_ - di
+//	val ch2 = (e - dw) / 2 * tan30 // bearing face to hex corners
+//	val ch3 = m - (e - s) / 2 * tan30 // up the side to top of metal
+//	val h1 = h * 0.9
+//	val r = (s2 - di) / 3
+//
+//	// nyloc body with flange
+//	val face = workplane("XZ").sketch [
+//        moveTo(fix(di), fix(ch1))
+//        .lineTo(fix(da2), 0)
+//        .lineTo(fix(dw2), 0)
+//        .lineTo(fix(e2), fix(ch2))
+//        .lineTo(fix(e2), fix(ch3))
+//        .lineTo(fix(s2*0.999), fix(m))
+//        .lineTo(fix(s2*0.999), fix(h - r))
+//        .tangentArc(fix(r), fix(90))
+//        .lineTo(fix(di + r), fix(h))
+//        .lineTo(fix(di + r), fix(h1))
+//        .lineTo(fix(di), fix(h1))
+//        .close
+//    ]
+	show
+//    .revolve[axis = Z]
+//	val hexTool = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h)
+//	var nutSolid = face.intersect(hexTool)
+//
+//	// flange
+//	val flangeProfile = workplane("XZ").sketch [
+//        moveTo((da + s)/4, 0)
+//        .lineTo(dc/2, 0).lineTo(dc/2, c)
+//        .lineTo((da + s)/4, c + (dc/2 - (da + s)/4) * tan(Math.toRadians(30))).close
+//    ].revolve[axis = Z]
+//	nutSolid = nutSolid.union(flangeProfile)
+//	show(nutSolid)
+////    if (threaded) {
+////        val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, h + P)
+////        nutSolid = nutSolid.cut(cutter)
+////    }
+//	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_nyloc_nut", nutSolid))
 }

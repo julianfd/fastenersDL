@@ -13,7 +13,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createRaisedCountersunkScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, makeThread:Boolean = true, standard:RaisedCountersunkStandardType = RaisedCountersunkStandardType.ISO2010)
+rule geometry.createRaisedCountersunkScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:RaisedCountersunkStandardType = RaisedCountersunkStandardType.ISO2010, cutThread:Boolean = true)
 do {
 
 	// DEBUG vals
@@ -54,7 +54,7 @@ do {
 	val headFlatHeight = (dkTheo - dkMean) / (2 * tan(cskAngle / 2))
 	val sharpCornerHeight = -1 * (headFlatHeight + (dkMean - dia) / (2 * tan(cskAngle / 2)))
 	val filletStart = sharpCornerHeight - r * tan(cskAngle / 4)
-	val actualThreadLength = if(length + filletStart > b) b else length + filletStart
+	val threadLength = if(length + filletStart > b) b else length + filletStart
 
 	val headArcAngle = asin(dkMean / (2 * rf))
 	val crownHeight = if (standard == RaisedCountersunkStandardType.ISO14584) {
@@ -90,20 +90,21 @@ do {
 	}
 	headGeo = headGeo.cut(recess)
 
-//    if (makeThread) {
-//        val threadCutter = CreateBlindThreadCutter(dia, P, actualThreadLength)
-//        threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - actualThreadLength)))
-//        screw = screw.cut(threadCutter)
-//    }
-	val shaftGeo = workplane("XZ").sketch [
+	var shaftGeo = workplane("XZ").sketch [
 		moveTo(0, filletStart)
         .lineTo(0.0, -length)
         .lineTo(dia / 2.0, -length)
         .lineTo(dia / 2.0, filletStart)
         .close
-    ].revolve[axis = Z]
+    ].revolve[axis = Z].rotate[axis = Z angle = 180]
 
-	show(headGeo.union(shaftGeo))
+	if (cutThread) {
+//		shaftGeo = headGeo.faces[Q < Z].workplane.cylinder(dia / 2, length, [combine = false]).
+//			translate(0, 0, -length / 2)
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length).
+			translate(0.0, 0.0, -1 * (length - threadLength))
+		shaftGeo = shaftGeo.cut(threadCutter)
+	}
 
 	cskHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
 	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))

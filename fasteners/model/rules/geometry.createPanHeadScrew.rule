@@ -12,7 +12,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createPanHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, makeThread:Boolean = true, standard:PanHeadStandardType = PanHeadStandardType.ISO7045)
+rule geometry.createPanHeadScrew(d:ThreadSize = ThreadSize.M6, l:Length = Length.L20, standard:PanHeadStandardType = PanHeadStandardType.ISO7045, cutThread:Boolean = true)
 do {
 
 	// DEBUG vals
@@ -83,20 +83,22 @@ do {
 	headGeo = headGeo.cut(recess)
 
 	val threadLength = if(isPartiallyThreaded) b else length - r
-//	if (makeThread) {
-//		val threadCutter = CreateBlindThreadCutter(dia, P, threadLength)
-//		threadCutter.translate(Base.Vector(0.0, 0.0, -1 * (length - threadLength)))
-//		screw = screw.cut(threadCutter)
-//	}
-	val shaftGeo = workplane("XZ").sketch [
+
+	var shaftGeo = workplane("XZ").sketch [
         lineTo(dia / 2.0 + r, 0.0)
         .polarArc(180, r, 90)
         .lineTo(dia / 2.0, -length + dia / 10.0)
         .lineTo(dia * 0.4, -length)
         .lineTo(0.0, -length)
         .close
-    ].revolve[axis = Z]
-	show(headGeo.union(shaftGeo))
+    ].revolve[axis = Z].rotate[axis = Z angle = 180]
+
+	if (cutThread) {
+//		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2).edges[Q < Z].chamfer(0.1 * dia)
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length).
+			translate(0.0, 0.0, -1 * (length - threadLength))
+		shaftGeo = shaftGeo.cut(threadCutter)
+	}
 
 	panHead.part = part(partDefinition(standard.toString + "_" + d + "_head", headGeo))
 	boltShaft.part = part(partDefinition(standard.toString + "_" + length.doubleValue + "_shaft", shaftGeo))

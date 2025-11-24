@@ -12,7 +12,7 @@ import topology.BoltShaft
  * @do
  * @precondition
  */
-rule geometry.createHexHeadBolt(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadStandardType = HexHeadStandardType.ISO4014) //make enum
+rule geometry.createHexHeadBolt(d:ThreadSize = ThreadSize.M6, l:Length = Length.L40, standard:HexHeadStandardType = HexHeadStandardType.ISO4014, cutThread:Boolean = true) //make enum
 do {
 	/*fastere WB hex head standards
 	 * - DIN 933 hex head screws
@@ -55,6 +55,8 @@ do {
 	val k = bolt.k // head height
 	val r = bolt.r // underhead fillet radius
 	val s = bolt.s // head width across flats
+	val isPartiallyThreaded = length - r > b
+	val threadLength = if(isPartiallyThreaded) b else length - r
 	// head chamfer 
 	val cham = (e - s) * sin(Math.toRadians(15))
 	val sqrt3 = sqrt(3)
@@ -66,14 +68,18 @@ do {
 
 	boltHead.part = part(partDefinition(partID + "_" + d + "_head", headGeo))
 
-	// in case of partially threaded fastener
-	if (length - r > b) {
-	}
-	val shaftGeo = workplane("XZ").sketch [
+	var shaftGeo = workplane("XZ").sketch [
 		lineTo(dia / 2.0 + r, 0.0).polarArc(180, r, 90)
 		.lineTo(dia/2, -length + dia /10).lineTo(dia *4 /10, -length)
 		.lineTo(0, -length).close
-	].revolve[axis = Z]
+	].revolve[axis = Z].rotate[axis = Z angle = 180]
+
+	if (cutThread) {
+//		shaftGeo = workplane.cylinder(dia / 2, length).translate(0, 0, -length / 2).edges[Q < Z].chamfer(0.1 * dia)
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length).
+			translate(0.0, 0.0, -1 * (length - threadLength))
+		shaftGeo = shaftGeo.cut(threadCutter)
+	}
 
 	boltShaft.part = part(partDefinition(partID + "_" + length.doubleValue + "_shaft", shaftGeo))
 

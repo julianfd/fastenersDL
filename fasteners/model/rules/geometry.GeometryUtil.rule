@@ -1,3 +1,6 @@
+import geo.GeoParameterClasses.SweepTransition
+import geo.Shape
+import geo.Wire
 import geo.Workplane
 import standards.thread.Length
 import standards.thread.ThreadSize
@@ -165,7 +168,34 @@ op createCrossRecess(crossType : String, m : Double) : Workplane {
 		val rotCount = i
 		crossGeo = crossGeo.cut(crossEdgeGeo.rotate[angle = rotCount * 90[deg] axis = #[0, 0, 1]])
 	}
-     
-
 	return crossGeo
+}
+
+op createThreadCutter(dia : Double, P : Double, blen : Double) : Shape {
+	val sqrt3 = sqrt(3)
+	val H = sqrt3 / 2 * P
+	val trotations = Math.floor(blen / P) + 1.0//blen / P + 2
+	val fillet_r = P * sqrt3 / 12
+	val helix_height = trotations * P
+	val dia2 = dia / 2
+
+	val profile = workplane("XZ").sketch [
+		moveTo(dia2 + sqrt3 * 3 / 80 * P, -0.475 * P)
+		.lineTo(dia2 - 0.625 * H, -1 * P / 8)
+		.threePointArc(#[dia2 - 0.625 * H - 0.5 * fillet_r, 0], #[dia2 - 0.625 * H, P / 8])
+		.lineTo(dia2 + sqrt3 * 3 / 80 * P, 0.475 * P)
+		.close
+	].wires.first as Wire
+	var helix = geo.Wire.makeHelix(P, helix_height, dia / 2) // .translate(0, 0, -helix_height) as geo.Wire
+	val leadOutR = dia / 2 + 0.55 * (5 / 8 * H + 0.5 * fillet_r)
+	var helixLeadOut = geo.Wire.makeHelix(P, - P / 2, leadOutR)
+	helixLeadOut = helixLeadOut.translate(dia / 2 - leadOutR, 0, 0) as Wire
+	helix = helix.add(helixLeadOut).rotate[axis = X angle = 180] as Wire
+	
+	val threadCut = geo.Solid.sweep(profile,#{}, helix,
+		[transition = SweepTransition.RIGHT mode = true]
+	).translate(#[0.0, 0.0, - P * 3/4]).solids.first
+	if(threadCut.valid){
+		return threadCut
+	} 
 }
