@@ -1,5 +1,4 @@
 import geo.GeoParameterClasses.SweepTransition
-import geo.Shape
 import geo.Wire
 import geo.Workplane
 import standards.thread.Length
@@ -171,7 +170,7 @@ op createCrossRecess(crossType : String, m : Double) : Workplane {
 	return crossGeo
 }
 
-op createThreadCutter(dia : Double, P : Double, blen : Double) : Shape {
+op createThreadCutter(dia : Double, P : Double, blen : Double) : Workplane {
 	val sqrt3 = sqrt(3)
 	val H = sqrt3 / 2 * P
 	val trotations = Math.floor(blen / P) + 1.0//blen / P + 2
@@ -196,6 +195,52 @@ op createThreadCutter(dia : Double, P : Double, blen : Double) : Shape {
 		[transition = SweepTransition.RIGHT mode = true]
 	).translate(#[0.0, 0.0, - P * 3/4]).solids.first
 	if(threadCut.valid){
-		return threadCut
+		return workplane.add(threadCut)
 	} 
+}
+
+op createInnerThreadCutter(dia : Double, P : Double, blen : Double) : Workplane {
+	val sqrt3 = sqrt(3)
+	val cos30 = sqrt3 / 2.0
+	val H = P * cos30
+	val r = dia / 2
+
+	val helix = Wire.makeHelix(P, blen, r)
+	val profile = workplane("XZ").sketch [
+		moveTo(r - 0.875 * H + 0.025 * P * sqrt3, P / 2 * 0.95 + P * 1 / 16)
+		.lineTo(r, P*2.0/16.0)
+		.threePointArc(#[r + H * 1 / 24.0, P * 2.0 / 32.0], #[r, 0])
+		.lineTo( r - 0.875 * H + 0.025 * P * sqrt3, -P / 2 * 0.95 + P * 1 / 16)
+		.close
+	].wires.first as Wire
+
+	val threadCut = geo.Solid.sweep(
+		profile,
+		#{},
+		helix,
+		[transition = SweepTransition.RIGHT mode = true]
+	).translate(0, 0, -P * 9.0 / 16.0).solids.first
+	if(threadCut.valid){
+		return workplane.add(threadCut)
+	} 
+}
+
+op createBlindInnerThreadCutter(dia : Double, P : Double, blen : Double) : Workplane{
+	val sqrt3 = sqrt(3)
+	val conic_height = 0.55 * dia / tan(Math.toRadians(59))
+	var threads = createInnerThreadCutter(dia, P, blen + conic_height)
+	val inner_rad = dia / 2 - 0.625 * sqrt3 / 2 * P
+	var core = workplane.cylinder(inner_rad, blen + 1.1 * conic_height + 1, [centered = #{true, true, false}])
+	core = core.translate(0, 0, -P)
+
+	val drill = workplane("XZ").sketch [
+      	lineTo(0.55*dia, 0)
+      	.lineTo(0.55* dia, blen)
+      	.lineTo(0.0, blen + conic_height)
+      	.close
+      ].revolve[axis = Z]
+	threads = threads.intersect(drill)
+	core = core.intersect(drill)
+	val obj = core.union(threads)
+	return obj
 }

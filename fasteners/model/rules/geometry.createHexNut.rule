@@ -14,12 +14,11 @@ import standards.hexnut.ISO4034
 import standards.hexnut.ISO4035
 import standards.thread.ThreadSize
 
-rule geometry.createHexNut //(d:ThreadSize = ThreadSize.M6, standard:HexNutStandardType = HexNutStandardType.ISO4032, threaded:Boolean = true)
+rule geometry.createHexNut(d:ThreadSize = ThreadSize.M6, standard:HexNutStandardType = HexNutStandardType.ISO4032, threaded:Boolean = true)
 do {
 
-	val d = ThreadSize.M6
-	val standard = HexNutStandardType.DIN6334
-
+//	val d = ThreadSize.M6
+//	val standard = HexNutStandardType.DIN6334
 	G+[(nut:HexNut)]
 
 	switch (standard) {
@@ -75,11 +74,11 @@ do {
 		polygon(6, s / sqrt3 * 2)
 	].extrude(m)
 
-	val nutSolid = profile.intersect(hexPrism)
-	show
-//	if (threaded) {
-//		val threadCutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
-//		nutSolid = nutSolid.cut(threadCutter)
-//	}
+	var nutSolid = profile.intersect(hexPrism)
+
+	if (threaded) {
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createInnerThreadCutter(Dia, P, m + P)
+		nutSolid = nutSolid.cut(threadCutter)
+	}
 	nut.part = part(partDefinition(standard.toString + "_" + d + "_nut", nutSolid))
 }

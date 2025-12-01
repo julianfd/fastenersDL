@@ -1,0 +1,65 @@
+package standards.thincapnut
+
+import topology.Nut
+import topology.NutStandard
+import standards.thread.ThreadSize
+
+class ThinCapNut extends Nut {
+	ThinCapNutStandard standard
+	thread : ThreadSize
+	Dia    : Unit[mm]
+	P      : Unit[mm]
+	g2     : Unit[mm]
+	h      : Unit[mm]
+	r      : Unit[mm]
+	s      : Unit[mm]
+	t      : Unit[mm]
+	w      : Unit[mm]
+
+	op setParameters(d:ThreadSize) {
+		if (standard === null) throw new IllegalStateException("standard not set")
+		val params = standard.getParameters.get(d)
+		if (params === null)
+			throw new IllegalArgumentException("Thread size " + d + " not covered by " + standard.class)
+		thread = d
+		Dia = rule geometry.GeometryUtil.op.getDia(d)
+		P = params.get(0) * 1[mm]
+		g2 = params.get(1) * 1[mm]
+		h = params.get(2) * 1[mm]
+		r = params.get(3) * 1[mm]
+		s = params.get(4) * 1[mm]
+		t = params.get(5) * 1[mm]
+		w = params.get(6) * 1[mm]
+	}
+}
+
+interface ThinCapNutStandard extends NutStandard {
+}
+
+enum ThinCapNutStandardType {
+	DIN917
+}
+
+class DIN917 extends ThinCapNutStandard {
+	@Override
+	op getParameters() : Map<ThreadSize, List<Double>> {
+		val p = map
+		// FsData/din917head.csv: Dia,P,g2,h,r,s,t,w
+		// map => P, g2, h, r, s, t, w
+		p.put(ThreadSize.M4, #{0.7, 1.05, 5.5, 8.0, 7.0, 4.16, 1.0})
+		p.put(ThreadSize.M5, #{0.8, 1.2, 7.0, 10.0, 8.0, 4.96, 1.0})
+		p.put(ThreadSize.M6, #{1.0, 1.5, 9.0, 12.0, 10.0, 6.71, 1.5})
+		p.put(ThreadSize.M8, #{1.25, 1.87, 12.0, 15.0, 13.0, 9.21, 2.0})
+		p.put(ThreadSize.M10, #{1.5, 2.25, 14.0, 20.0, 17.0, 10.65, 2.0})
+		p.put(ThreadSize.M12, #{1.75, 6.4, 16.0, 25.0, 19.0, 13.15, 2.0})
+		p.put(ThreadSize.M14, #{2.0, 7.3, 18.0, 28.0, 22.0, 14.65, 2.0})
+		p.put(ThreadSize.M16, #{2.0, 7.3, 20.0, 30.0, 24.0, 16.65, 2.0})
+		p.put(ThreadSize.M18, #{2.5, 9.3, 22.0, 32.0, 27.0, 18.58, 2.0})
+		p.put(ThreadSize.M20, #{2.5, 9.3, 25.0, 35.0, 30.0, 20.58, 2.5})
+		p.put(ThreadSize.M22, #{2.5, 9.3, 28.0, 35.0, 32.0, 21.58, 3.0})
+		p.put(ThreadSize.M24, #{3.0, 10.7, 30.0, 40.0, 36.0, 23.58, 3.0})
+		p.put(ThreadSize.M30, #{3.5, 12.7, 34.0, 60.0, 46.0, 27.58, 3.0})
+		p.put(ThreadSize.M36, #{4.0, 14.0, 44.0, 70.0, 55.0, 35.5, 4.0})
+		return p
+	}
+}

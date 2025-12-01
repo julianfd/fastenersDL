@@ -1,0 +1,83 @@
+import geo.GeoParameterClasses.SweepTransition
+import geo.Wire
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule testInnerthread
+do {
+	val P = 1.0
+	val blen = 7.8
+	val dia = 6.0
+
+	val conic_height = 0.55 * dia / tan(Math.toRadians(59))
+	val lenEx = blen + conic_height
+	val sqrt3 = sqrt(3)
+	val cos30 = sqrt3 / 2.0
+	val H = P * cos30
+	val r = dia / 2
+
+	val helix = Wire.makeHelix(P, lenEx, r)
+	val profile = workplane("XZ").sketch [
+		moveTo(r - 0.875 * H + 0.025 * P * sqrt3, P / 2 * 0.95 + P * 1 / 16)
+		.lineTo(r, P*2.0/16.0)
+		.threePointArc(#[r + H * 1 / 24.0, P * 2.0 / 32.0], #[r, 0])
+		.lineTo( r - 0.875 * H + 0.025 * P * sqrt3, -P / 2 * 0.95 + P * 1 / 16)
+		.close
+	].wires.first as Wire
+
+	val threadCut = geo.Solid.sweep(
+		profile,
+		#{},
+		helix,
+		[transition = SweepTransition.RIGHT mode = true]
+	).translate(0, 0, -P * 9.0 / 16.0).solids.first
+
+	var threads = workplane.add(threadCut) // createInnerThreadCutter(dia, P, blen + conic_height)
+	val inner_rad = dia / 2 - 0.625 * sqrt3 / 2 * P
+	var core = workplane.cylinder(inner_rad, blen + 1.1 * conic_height + 1, [centered = #{true, true, false}])
+	core = core.translate(0, 0, -P)
+
+	val drill = workplane("XZ").sketch [
+      	lineTo(0.55*dia, 0)
+      	.lineTo(0.55* dia, blen)
+      	.lineTo(0.0, blen + conic_height)
+      	.close
+      ].revolve[axis = Z]
+	threads = threads.intersect(drill)
+	core = core.intersect(drill)
+
+	var obj = core.union(threads)
+	show(obj)
+
+/*
+ * H = P * cos30  # Thread depth H
+ *         r = dia / 2.0
+
+ *         # make just one turn, length is identical to pitch
+ *         helix = Part.makeLongHelix(
+ *             P, blen, r, 0, self.LeftHanded
+ *         )
+
+ *         # points for inner thread profile
+ *         fm = FastenerBase.FSFaceMaker()
+ *         fm.AddPoint(
+ *             r - 0.875 * H + 0.025 * P * sqrt3,
+ *             P / 2 * 0.95 + P * 1 / 16
+ *         )
+ *         fm.AddPoint(r, P * 2.0 / 16.0)
+ *         fm.AddArc(r + H * 1 / 24.0, P * 2.0 / 32.0, r, 0)
+ *         fm.AddPoint(
+ *             r - 0.875 * H + 0.025 * P * sqrt3,
+ *             -P / 2 * 0.95 + P * 1 / 16
+ *         )
+ *         W0 = fm.GetClosedWire()
+ *         W0.translate(Base.Vector(0, 0, -P * 9.0 / 16.0))
+
+ *         makeSolid = True
+ *         isFrenet = True
+ *         cutTool = Part.Wire(helix).makePipeShell([W0], makeSolid, isFrenet)
+ */
+}

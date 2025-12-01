@@ -10,10 +10,10 @@ import standards.thread.ThreadSize
  * @do
  * @precondition
  */
-rule geometry.createFlangedHexNut //(d:ThreadSize = ThreadSize.M8, standard:FlangedHexNutStandardType = FlangedHexNutStandardType.EN1661, threaded:Boolean = true)
+rule geometry.createFlangedHexNut(d:ThreadSize = ThreadSize.M8, standard:FlangedHexNutStandardType = FlangedHexNutStandardType.EN1661, threaded:Boolean = true)
 do {
-	val d = ThreadSize.M10
-	val standard = FlangedHexNutStandardType.ISO10663
+//	val d = ThreadSize.M10
+//	val standard = FlangedHexNutStandardType.ISO10663
 	G+[(nut:FlangedHexNut)]
 
 	switch (standard) {
@@ -55,15 +55,15 @@ do {
 	val flangeProfile = workplane("XZ").sketch [
         moveTo((da+s)/4, 0)
         .lineTo((dc+sqrt3*c)/2, 0)
-//        .lineTo((dc-c)/2, 0)
+//        .lineTo((dc-c)/2, 0) unnecessary!
         .tangentArc(c/2, 150)
         .lineTo((da+s)/4, sqrt3/3*((dc-c)/2 + c/(4-2*sqrt3) - (da+s)/4)).close
     ].revolve[axis = Z]
 	nutSolid = nutSolid.union(flangeProfile)
-	show(nutSolid)
-//	if (threaded) {
-//		val threadCutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
-//		nutSolid = nutSolid.cut(threadCutter)
-//	}
+//	show(nutSolid)
+	if (threaded) {
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createInnerThreadCutter(Dia, P, m + P)
+		nutSolid = nutSolid.cut(threadCutter)
+	}
 	nut.part = part(partDefinition(standard.toString + "_" + d + "_flanged_hex_nut", nutSolid))
 }

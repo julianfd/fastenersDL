@@ -1,7 +1,6 @@
 import standards.capnut.CapNut
 import standards.capnut.CapNutStandardType
 import standards.capnut.DIN1587
-import standards.capnut.DIN917
 import standards.capnut.GOST11860_1
 import standards.thread.ThreadSize
 
@@ -14,14 +13,12 @@ rule geometry.createCapNut //(d:ThreadSize = ThreadSize.M6, standard:CapNutStand
 do {
 	val d = ThreadSize.M6
 	val standard = CapNutStandardType.DIN1587
-
+	val threaded = true
+	
 	G+[(nut:CapNut)]
 	switch (standard) {
 		case DIN1587: {
 			G+[(nut)-[:standard]->(:DIN1587)];
-		}
-		case DIN917: {
-			G+[(nut)-[:standard]->(:DIN917)];
 		}
 		case GOST11860_1: {
 			G+[(nut)-[:standard]->(:GOST11860_1)];
@@ -52,18 +49,20 @@ do {
     ].revolve[axis = Z]
 	val hex = workplane("XY").sketch[polygon(6, s / sqrt3 * 2)].extrude(h * 1.1)
 	var nutSolid = profile.intersect(hex)
-//	if (threaded) {
-//		val tap = GeometryUtil.op.blindInnerThreadCutter(Dia, P, h - w)
-//		val cham = workplane("XZ").sketch [
-//            moveTo(0, h - w).lineTo(1.1*Dia/2, t).lineTo(1.1*Dia/2, h).lineTo(0, h).close
-//        ].revolve[axis = Z]
-//		nutSolid = nutSolid.cut(tap.cut(cham))
-//	} else {
-	val inner = workplane("XZ").sketch [
+	if (threaded) {
+		val tap = rule fasteners.rules.geometry.GeometryUtil.op.createBlindInnerThreadCutter(Dia, P, h - w)
+		val cham = workplane("XZ").sketch [
+            lineTo(0, h - w).lineTo(1.1*Dia/2, t).lineTo(1.1*Dia/2, h).lineTo(0, h).close
+        ].revolve[axis = Z]
+		show(tap, nutSolid)
+
+		nutSolid = nutSolid.cut(tap) // .cut(cham))
+	} else {
+		val inner = workplane("XZ").sketch [
             moveTo(0, 0).lineTo(0, h-w).lineTo(Dia/2 - 0.625*P*sqrt3/2, t).lineTo(Dia/2 - 0.625*P*sqrt3/2, 0).close
         ].revolve[axis = Z]
-	nutSolid = nutSolid.cut(inner)
-//	}
+		nutSolid = nutSolid.cut(inner)
+	}
 	nut.part = part(partDefinition(standard.toString + "_" + d + "_cap_nut", nutSolid))
 	show(nutSolid)
 }

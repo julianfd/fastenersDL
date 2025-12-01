@@ -12,10 +12,10 @@ import standards.thread.ThreadSize
  * @do
  * @precondition
  */
-rule geometry.createNylocNut //(d:ThreadSize = ThreadSize.M8, standard:NylocNutStandardType = NylocNutStandardType.DIN985, threaded:Boolean = true)
+rule geometry.createNylocNut(d:ThreadSize = ThreadSize.M8, standard:NylocNutStandardType = NylocNutStandardType.DIN985, threaded:Boolean = true)
 do {
-	val d = ThreadSize.M8
-	val standard = NylocNutStandardType.DIN985
+//	val d = ThreadSize.M8
+//	val standard = NylocNutStandardType.DIN985
 
 	G+[(nut:NylocNut)]
 	switch (standard) {
@@ -65,11 +65,11 @@ do {
     ].revolve[axis = Z]
 
 	val hexTool = workplane("XY").sketch[polygon(6, s / sqrt(3) * 2)].extrude(m * 3)
-	val nutSolid = profile.intersect(hexTool)
+	var nutSolid = profile.intersect(hexTool)
 
-//	if (threaded) {
-//		val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, h + P)
-//		nutSolid = nutSolid.cut(cutter)
-//	}
+	if (threaded) {
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createInnerThreadCutter(Dia, P, m + P)
+		nutSolid = nutSolid.cut(threadCutter)
+	}
 	nut.part = part(partDefinition(standard.toString + "_" + d + "_nyloc_nut", nutSolid))
 }

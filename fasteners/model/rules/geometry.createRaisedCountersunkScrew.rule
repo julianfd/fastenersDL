@@ -99,8 +99,8 @@ do {
     ].revolve[axis = Z].rotate[axis = Z angle = 180]
 
 	if (cutThread) {
-//		shaftGeo = headGeo.faces[Q < Z].workplane.cylinder(dia / 2, length, [combine = false]).
-//			translate(0, 0, -length / 2)
+		shaftGeo = headGeo.faces[Q < Z].workplane.cylinder(dia / 2, length, [combine = false]).
+			translate(0, 0, -length / 2)
 		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createThreadCutter(dia, P, length).
 			translate(0.0, 0.0, -1 * (length - threadLength))
 		shaftGeo = shaftGeo.cut(threadCutter)

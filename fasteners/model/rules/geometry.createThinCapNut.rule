@@ -1,0 +1,66 @@
+import standards.thincapnut.DIN917
+import standards.thincapnut.ThinCapNut
+import standards.thincapnut.ThinCapNutStandardType
+import standards.thread.ThreadSize
+
+/**
+ * @match
+ * @do
+ * @precondition
+ */
+rule geometry.createThinCapNut //(d:ThreadSize = ThreadSize.M6, standard:ThinCapNutStandardType = ThinCapNutStandardType.DIN917, threaded:Boolean = true)
+do {
+
+	val d = ThreadSize.M6
+	val standard = ThinCapNutStandardType.DIN917
+	val threaded = true
+	G+[(nut:ThinCapNut)]
+	switch (standard) {
+		case DIN917: {
+			G+[(nut)-[:standard]->(:DIN917)];
+		}
+	}
+	nut.setParameters(d)
+	val Dia = nut.Dia
+	val P = nut.P
+	val h = nut.h
+	val r = nut.r
+	val s = nut.s
+	val t = nut.t
+	val w = nut.w
+	val sqrt3 = sqrt(3)
+	val tan15 = tan(15[deg])
+	val e = s / sqrt3 * 2
+	val diaHalf = Dia / 2
+	val cham_o = (e - s) * tan15
+	val profile = workplane("XZ").sketch [
+        moveTo(diaHalf, 0)
+        .lineTo(s / 2, 0)
+        .lineTo(e / 2, cham_o)
+        .lineTo(e / 2, h - r + sqrt(r * r - e * e / 4))
+        .threePointArc(#[e / 4, h - r + sqrt(r * r - e * e / 16)], #[0, h])
+        .lineTo(0, h - w)
+        .lineTo(0, diaHalf * tan15)
+        .close
+    ].revolve[axis = Z]
+	val hex = workplane("XY").sketch[polygon(6, e)].extrude(h)
+	var nutSolid = profile.intersect(hex)
+
+	if (threaded) {
+		val tap = rule fasteners.rules.geometry.GeometryUtil.op.createBlindInnerThreadCutter(Dia, P, t - 1.5 * P)
+		nutSolid = nutSolid.cut(tap)
+	} else {
+		val H = P * cos(30[deg]) * 5 / 8
+		val inner = workplane("XZ").sketch [
+            moveTo(0, 0)
+            .lineTo(diaHalf - H, 0)
+            .lineTo(diaHalf - H, t - P)
+            .lineTo(0, t - P + (diaHalf - H) / tan(59[deg]))
+            .close
+        ].revolve[axis = Z]
+		nutSolid = nutSolid.cut(inner)
+	}
+
+	show(nutSolid)
+	nut.part = part(partDefinition(standard.toString + "_" + d + "_thin_cap_nut", nutSolid))
+}

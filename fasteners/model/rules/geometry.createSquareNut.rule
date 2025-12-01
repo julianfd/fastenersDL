@@ -4,11 +4,10 @@ import standards.squarenut.SquareNut
 import standards.squarenut.SquareNutStandardType
 import standards.thread.ThreadSize
 
-rule geometry.createSquareNut //(d:ThreadSize = ThreadSize.M6, standard:SquareNutStandardType = SquareNutStandardType.DIN557, threaded:Boolean = true)
+rule geometry.createSquareNut(d:ThreadSize = ThreadSize.M6, standard:SquareNutStandardType = SquareNutStandardType.DIN557, threaded:Boolean = true)
 do {
-	val d = ThreadSize.M6
-	val standard = SquareNutStandardType.DIN557
-
+//	val d = ThreadSize.M6
+//	val standard = SquareNutStandardType.DIN557
 	G+[(nut:SquareNut)]
 	switch (standard) {
 		case DIN557: {
@@ -42,12 +41,12 @@ do {
 		val cham = workplane.cone(dw / 2 + m * sqrt3, dw / 2, m)
 		nutSolid = nutSolid.intersect(cham)
 	}
-	show(nutSolid)
 
-//    if (threaded) {
-//        val cutter = GeometryUtil.op.innerThreadCutter(Dia, P, m + P)
-//        nutSolid = nutSolid.cut(cutter)
-//    }
+	if (threaded) {
+		val threadCutter = rule fasteners.rules.geometry.GeometryUtil.op.createInnerThreadCutter(Dia, P, m + P)
+		nutSolid = nutSolid.cut(threadCutter)
+	}
+	show(nutSolid)
 	nut.part = part(partDefinition(standard.toString + "_" + d + "_square_nut", nutSolid))
 
 }
